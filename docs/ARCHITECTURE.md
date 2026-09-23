@@ -17,7 +17,7 @@ single `<canvas>`, with an HTML/CSS overlay for UI. Vite handles dev and build.
 │                               ├─ entities/  Player, Platform, Coin, Spring, Monster, …     │
 │                               └─ systems/   LevelGenerator, Difficulty, Collision, Camera  │
 │                                                                                            │
-│   services/  Storage ─► Profile · Wallet · Leaderboard · Settings   (localStorage)         │
+│   services/  Storage ─► Profile · Wallet · Settings   leaderboard/ Local | Supabase (live) │
 └────────────────────────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -75,11 +75,30 @@ while rising, lean into horizontal movement and a somersault on springs.
 
 All keys are namespaced with `dilijump:v1:` in `localStorage`:
 
-| Key           | Contents                                            |
-| ------------- | --------------------------------------------------- |
-| `profile`     | `{ name, bestScore, gamesPlayed }`                  |
-| `wallet`      | `{ balance, lifetime }` DLI coins                   |
-| `leaderboard` | Top-10 `[{ id, name, score, coins, height, date }]` |
-| `settings`    | `{ muted }`                                         |
+| Key                   | Contents                                                                            |
+| --------------------- | ----------------------------------------------------------------------------------- |
+| `profile`             | `{ name, bestScore, gamesPlayed }`                                                  |
+| `wallet`              | `{ balance, lifetime }` DLI coins                                                   |
+| `leaderboard`         | Offline board, one best entry per name `[{ id, name, score, coins, height, date }]` |
+| `leaderboard:pending` | Best run that failed to reach Supabase (retried)                                    |
+| `settings`            | `{ muted }`                                                                         |
 
 If storage is unavailable (private mode), an in-memory backend is used.
+
+## Leaderboard backends
+
+`createLeaderboard()` (`src/services/leaderboard/index.js`) returns
+`SupabaseLeaderboard` when `VITE_SUPABASE_URL` and
+`VITE_SUPABASE_PUBLISHABLE_KEY` are set, otherwise `LocalLeaderboard`. Both
+implement the same async interface:
+
+| Method                                               | Returns                                                      |
+| ---------------------------------------------------- | ------------------------------------------------------------ |
+| `init()`                                             | Connects / signs in (Supabase)                               |
+| `submit({ name, score, coins, height, durationMs })` | `{ rank, isBest, bestScore, online, queued? }`               |
+| `top(limit)`                                         | `[{ rank, name, score, coins, date, isMe }]`, one per person |
+| `myEntry()`                                          | The current player's row, or `null`                          |
+| `rename(old, new)`                                   | —                                                            |
+| `subscribe(onChange, onStatus)`                      | Unsubscribe function (realtime)                              |
+
+See [SUPABASE.md](SUPABASE.md) for the database side.

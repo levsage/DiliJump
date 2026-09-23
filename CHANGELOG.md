@@ -6,6 +6,22 @@ and the project uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-09-23
+
+### Added
+
+- **Live global leaderboard** powered by Supabase: anonymous sign-in, realtime updates, a LIVE/offline status badge, and your own rank shown even outside the top 10.
+- Supabase migration (`supabase/migrations`) with RLS, `submit_run` / `get_leaderboard` / `get_my_rank` / `set_player_name` RPCs, and basic anti-cheat (plausibility check, rate limit).
+- SQL test suite (`npm run test:db`), also run in CI against Postgres 17.
+- Offline queue: the best unsent run is retried automatically.
+- Setup guide: `docs/SUPABASE.md`.
+
+### Changed
+
+- The leaderboard shows **only the highest score per person** (online and offline). Old local data is merged to one entry per name automatically.
+- The leaderboard service moved to `src/services/leaderboard/` (`LocalLeaderboard`, `SupabaseLeaderboard`).
+- `supabase-js` is lazy-loaded in its own chunk.
+
 ## [1.0.0] - 2026-09-23
 
 ### Added
@@ -22,5 +38,6 @@ and the project uses [Semantic Versioning](https://semver.org/).
 - Keyboard and touch controls, responsive layout, PWA manifest.
 - Tooling: Vite, ESLint, Prettier, Vitest, GitHub Actions CI and GitHub Pages deploy.
 
-[Unreleased]: https://github.com/levsage/DiliJump/compare/v1.0.0...HEAD
+[Unreleased]: https://github.com/levsage/DiliJump/compare/v1.1.0...HEAD
+[1.1.0]: https://github.com/levsage/DiliJump/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/levsage/DiliJump/releases/tag/v1.0.0

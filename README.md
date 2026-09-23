@@ -8,7 +8,7 @@
 Jump from platform to platform, grab **DLI coins**, dodge glitch bugs and climb the leaderboard.
 
 [![CI](https://github.com/levsage/DiliJump/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/levsage/DiliJump/actions/workflows/ci.yml)
-![version](https://img.shields.io/badge/version-1.0.0-1f5fc9)
+![version](https://img.shields.io/badge/version-1.1.0-1f5fc9)
 ![license](https://img.shields.io/badge/license-MIT-green)
 
 <img src="docs/images/screenshot-menu.jpg" width="260" alt="Main menu" />
@@ -53,6 +53,14 @@ npm install
 npm run dev        # http://localhost:5173
 ```
 
+### Live leaderboard (optional)
+
+```bash
+cp .env.example .env.local   # add your Supabase URL + publishable key
+```
+
+Full guide: **[docs/SUPABASE.md](docs/SUPABASE.md)**. Without these values the game uses an offline leaderboard.
+
 ### Scripts
 
 | Command           | What it does                                              |
@@ -79,13 +87,14 @@ DiliJump/
 │   ├── assets/brand/        # Dlicom logo, DLI coin, favicons, app icons
 │   ├── assets/sprites/      # Transparent mascot pose sprites + sprites.json
 │   └── manifest.webmanifest
+├── supabase/                # Leaderboard SQL migrations + SQL tests
 ├── src/
 │   ├── config/              # constants.js (all tuning), assets.js (manifest)
 │   ├── core/                # Game (state machine), World (simulation), GameLoop, Input, EventBus, AssetLoader
 │   ├── entities/            # Player, Platform, Coin, Spring, Monster, Projectile, Particle
 │   ├── systems/             # LevelGenerator, Difficulty, Collision, Camera, AudioManager
 │   ├── rendering/           # Renderer, Background, brand (logo paths), palette
-│   ├── services/            # Storage, Profile, Wallet, Leaderboard, Settings
+│   ├── services/            # Storage, Profile, Wallet, Settings, supabaseClient, leaderboard/ (Local + Supabase)
 │   ├── ui/                  # UIManager, HUD, screens/
 │   ├── styles/              # main.css
 │   └── main.js              # Composition root
@@ -94,7 +103,7 @@ DiliJump/
 └── index.html
 ```
 
-More detail in [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) and [`docs/GAMEPLAY.md`](docs/GAMEPLAY.md).
+More detail in [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md), [`docs/GAMEPLAY.md`](docs/GAMEPLAY.md) and [`docs/SUPABASE.md`](docs/SUPABASE.md).
 
 ## 🌿 Branches
 
