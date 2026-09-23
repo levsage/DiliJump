@@ -14,6 +14,14 @@
  */
 import { createClient } from '@supabase/supabase-js';
 
+if (typeof globalThis.WebSocket === 'undefined') {
+  console.error(
+    '❌ Node.js 22+ is required (native WebSocket for the realtime check). You have ' +
+      process.version,
+  );
+  process.exit(1);
+}
+
 const URL_ = (process.env.VITE_SUPABASE_URL ?? '').trim();
 const KEY = (
   process.env.VITE_SUPABASE_PUBLISHABLE_KEY ??

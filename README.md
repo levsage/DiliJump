@@ -44,7 +44,7 @@ Jump from platform to platform, grab **DLI coins**, dodge glitch bugs and climb 
 
 ## 🚀 Getting started
 
-Requires **Node.js ≥ 18.18** (see `.nvmrc`).
+Requires **Node.js ≥ 22** (see `.nvmrc`).
 
 ```bash
 git clone https://github.com/levsage/DiliJump.git
