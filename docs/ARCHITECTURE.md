@@ -75,13 +75,14 @@ while rising, lean into horizontal movement and a somersault on springs.
 
 All keys are namespaced with `dilijump:v1:` in `localStorage`:
 
-| Key                   | Contents                                                                            |
-| --------------------- | ----------------------------------------------------------------------------------- |
-| `profile`             | `{ name, bestScore, gamesPlayed }`                                                  |
-| `wallet`              | `{ balance, lifetime }` DLI coins                                                   |
-| `leaderboard`         | Offline board, one best entry per name `[{ id, name, score, coins, height, date }]` |
-| `leaderboard:pending` | Best run that failed to reach Supabase (retried)                                    |
-| `settings`            | `{ muted }`                                                                         |
+| Key                   | Contents                                                                                                       |
+| --------------------- | -------------------------------------------------------------------------------------------------------------- |
+| `profile`             | `{ name, bestScore, gamesPlayed }`                                                                             |
+| `wallet`              | `{ balance, lifetime }` DLI coins                                                                              |
+| `leaderboard`         | Offline board, one best entry per name `[{ id, name, score, coins, height, date }]`                            |
+| `leaderboard:pending` | Best run that failed to reach Supabase (retried)                                                               |
+| `identity`            | `{ playerId, secret, createdAt }`, the no-login leaderboard identity (the DB stores only a hash of the secret) |
+| `settings`            | `{ muted }`                                                                                                    |
 
 If storage is unavailable (private mode), an in-memory backend is used.
 
@@ -94,7 +95,7 @@ implement the same async interface:
 
 | Method                                               | Returns                                                      |
 | ---------------------------------------------------- | ------------------------------------------------------------ |
-| `init()`                                             | Connects / signs in (Supabase)                               |
+| `init()`                                             | Creates the Supabase client (database only, no login)        |
 | `submit({ name, score, coins, height, durationMs })` | `{ rank, isBest, bestScore, online, queued? }`               |
 | `top(limit)`                                         | `[{ rank, name, score, coins, date, isMe }]`, one per person |
 | `myEntry()`                                          | The current player's row, or `null`                          |

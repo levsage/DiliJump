@@ -1,6 +1,7 @@
 import { LocalLeaderboard } from './LocalLeaderboard.js';
 import { SupabaseLeaderboard } from './SupabaseLeaderboard.js';
 import { getSupabase, isSupabaseConfigured } from '../supabaseClient.js';
+import { PlayerIdentity } from '../PlayerIdentity.js';
 
 export { LocalLeaderboard, SupabaseLeaderboard };
 
@@ -11,7 +12,11 @@ export { LocalLeaderboard, SupabaseLeaderboard };
  */
 export function createLeaderboard(storage) {
   if (isSupabaseConfigured()) {
-    return new SupabaseLeaderboard({ getClient: getSupabase, storage });
+    return new SupabaseLeaderboard({
+      getClient: getSupabase,
+      storage,
+      identity: new PlayerIdentity(storage),
+    });
   }
   return new LocalLeaderboard(storage);
 }

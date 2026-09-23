@@ -8,7 +8,7 @@
 Jump from platform to platform, grab **DLI coins**, dodge glitch bugs and climb the leaderboard.
 
 [![CI](https://github.com/levsage/DiliJump/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/levsage/DiliJump/actions/workflows/ci.yml)
-![version](https://img.shields.io/badge/version-1.1.1-1f5fc9)
+![version](https://img.shields.io/badge/version-1.2.0-1f5fc9)
 ![license](https://img.shields.io/badge/license-MIT-green)
 
 <img src="docs/images/screenshot-menu.jpg" width="260" alt="Main menu" />
@@ -53,6 +53,10 @@ npm install
 npm run dev        # http://localhost:5173
 ```
 
+### Deploy (Vercel)
+
+Import the repo at <https://vercel.com/new>, add `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY` as environment variables, and deploy. Settings come from `vercel.json`.
+
 ### Live leaderboard (optional)
 
 ```bash
@@ -94,7 +98,7 @@ DiliJump/
 │   ├── entities/            # Player, Platform, Coin, Spring, Monster, Projectile, Particle
 │   ├── systems/             # LevelGenerator, Difficulty, Collision, Camera, AudioManager
 │   ├── rendering/           # Renderer, Background, brand (logo paths), palette
-│   ├── services/            # Storage, Profile, Wallet, Settings, supabaseClient, leaderboard/ (Local + Supabase)
+│   ├── services/            # Storage, Profile, Wallet, Settings, PlayerIdentity, supabaseClient, leaderboard/
 │   ├── ui/                  # UIManager, HUD, screens/
 │   ├── styles/              # main.css
 │   └── main.js              # Composition root
@@ -107,10 +111,10 @@ More detail in [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md), [`docs/GAMEPLAY.m
 
 ## 🌿 Branches
 
-| Branch | Purpose                                                      |
-| ------ | ------------------------------------------------------------ |
-| `main` | Stable, released code. Deployed to GitHub Pages.             |
-| `beta` | Integration / pre-release testing. Features land here first. |
+| Branch | Purpose                                                                       |
+| ------ | ----------------------------------------------------------------------------- |
+| `main` | Stable, released code. Deployed to GitHub Pages.                              |
+| `beta` | Integration / pre-release testing (Vercel preview). Features land here first. |
 
 See [`docs/BRANCHING.md`](docs/BRANCHING.md) for the full workflow.
 
