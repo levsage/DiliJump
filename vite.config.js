@@ -24,6 +24,12 @@ export default defineConfig({
     assetsDir: 'static', // keep bundled JS/CSS separate from public/assets
     target: 'es2020',
     sourcemap: true,
+    rollupOptions: {
+      output: {
+        // supabase-js is lazy-loaded; give its chunk a readable name.
+        manualChunks: (id) => (id.includes('node_modules/@supabase') ? 'supabase' : undefined),
+      },
+    },
   },
   test: {
     environment: 'node',
