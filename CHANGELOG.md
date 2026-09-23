@@ -6,6 +6,24 @@ and the project uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [1.2.0] - 2026-09-23
+
+### Changed
+
+- **No login at all.** The leaderboard no longer uses Supabase anonymous sign-ins. Each browser gets a random player id + secret (localStorage); the database stores only `sha256(secret)` and checks it on every write.
+- New SQL functions `submit_score`, `rename_player`, `get_player_rank` (migration `20260923140000_no_login_players.sql`).
+- The Supabase client is used as a database + realtime connection only (no auth session).
+
+### Added
+
+- **Vercel deployment**: `vercel.json` with caching and security headers (CSP allows only Supabase).
+- Abuse limit: at most 30 new players per IP per hour.
+- SQL snippets: reset leaderboard, remove test players, drop legacy auth functions.
+
+### Removed
+
+- The v1.1 anonymous-auth retry workaround (no longer needed without auth).
+
 ## [1.1.1] - 2026-09-23
 
 ### Fixed
@@ -45,7 +63,8 @@ and the project uses [Semantic Versioning](https://semver.org/).
 - Keyboard and touch controls, responsive layout, PWA manifest.
 - Tooling: Vite, ESLint, Prettier, Vitest, GitHub Actions CI and GitHub Pages deploy.
 
-[Unreleased]: https://github.com/levsage/DiliJump/compare/v1.1.1...HEAD
+[Unreleased]: https://github.com/levsage/DiliJump/compare/v1.2.0...HEAD
+[1.2.0]: https://github.com/levsage/DiliJump/compare/v1.1.1...v1.2.0
 [1.1.1]: https://github.com/levsage/DiliJump/compare/v1.1.0...v1.1.1
 [1.1.0]: https://github.com/levsage/DiliJump/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/levsage/DiliJump/releases/tag/v1.0.0

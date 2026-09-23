@@ -1,160 +1,120 @@
-# Live leaderboard with Supabase
-
-DiliJump's global leaderboard runs on [Supabase](https://supabase.com).
-**Each player gets one row: their highest score.** Worse runs never replace it.
-
-If Supabase isn't configured, the game falls back to an offline leaderboard
-stored in the browser (localStorage), with the same one-row-per-person rule.
+# Live leaderboard: Supabase database, no backend, no login
 
 ```
-Browser (publishable key)
-  │  1. signInAnonymously()            → a player id per device, no email needed
-  │  2. rpc('submit_run', …)           → server keeps max(score) per player
-  │  3. rpc('get_leaderboard', 10)     → top 10, one row per person
-  │  4. realtime: postgres_changes     → the open board refreshes live
+Browser (GitHub Pages / Vercel, static files only)
+  │  player id + secret created once, kept in localStorage   ← no login, no account
+  │
+  ├── rpc('submit_score', { id, secret, name, score… })      → database keeps max(score) per player
+  ├── rpc('get_leaderboard', 10)                              → top 10, one row per person
+  ├── rpc('get_player_rank', id)                              → your own rank
+  └── realtime: postgres_changes on players                   → the open board updates live
   ▼
-Postgres: public.players (1 row / player)   public.runs (history)
-          RLS: everyone can read players, nobody can write directly
+Supabase Postgres
+  players         1 row per player (public, read-only)
+  runs            every submitted run (private)
+  player_secrets  sha256(secret) per player (private)
 ```
+
+There is **no server of your own**. The game is plain static files, and all
+the rules live **inside the database** as SQL functions:
+
+- **One best score per person.** `best_score = greatest(old, new)`
+- **Nobody can post as someone else.** Every write must present the browser's secret. Only its hash is stored.
+- **Basic anti-cheat.** Scores that are impossible for the run time are rejected, one run per 3 s per player, at most 30 new players per network (IP) per hour.
+- **Direct table writes are blocked** by Row Level Security.
+
+**What stays in the browser (localStorage):** player name, personal best,
+games played, DLI coin wallet, settings, and the player id and secret.
+Clearing site data or switching browsers makes you a new player.
 
 ---
 
-## Step 1: Create a project
+## 1. Create the Supabase project
 
-1. Go to <https://supabase.com/dashboard> and click **New project**.
-2. Pick a name (e.g. `dilijump`), a database password and a region close to your players. For Bangladesh, **Singapore (ap-southeast-1)** is the closest.
-3. Wait about a minute for the project to finish setting up.
+<https://supabase.com/dashboard> → **New project**. For Bangladesh, the
+closest region is **Singapore**. Supabase Auth is **not** used, so there's no
+need to set up sign-in providers.
 
-## Step 2: Turn on anonymous sign-ins
+## 2. Create the database objects
 
-**Authentication → Sign In / Providers**, then switch on **"Allow anonymous sign-ins"** and save.
+**SQL Editor → New query**, then run these files **in order** (each one is safe to run again):
 
-> Each browser then gets its own player id without an email or password.
-> Recommended: under **Authentication → Attack Protection**, turn on
-> **CAPTCHA** (Cloudflare Turnstile) later to stop scripted fake accounts.
+1. [`supabase/migrations/20260923120000_live_leaderboard.sql`](../supabase/migrations/20260923120000_live_leaderboard.sql): tables, RLS, leaderboard, realtime
+2. [`supabase/migrations/20260923140000_no_login_players.sql`](../supabase/migrations/20260923140000_no_login_players.sql): no-login identities and the `submit_score` / `rename_player` / `get_player_rank` functions
 
-## Step 3: Create the tables and functions
+> **Upgrading from v1.1** (anonymous sign-ins): run file 2. Then, once v1.2 is
+> live, run [`supabase/snippets/reset_leaderboard.sql`](../supabase/snippets/reset_leaderboard.sql)
+> to clear the old rows (they can't be linked to the new browser ids and would
+> otherwise show up twice), and
+> [`supabase/snippets/drop_legacy_auth.sql`](../supabase/snippets/drop_legacy_auth.sql).
+> You can then turn **off** _Authentication → Sign In / Providers → Allow anonymous sign-ins_.
 
-1. Open **SQL Editor → New query**.
-2. Paste the whole file
-   [`supabase/migrations/20260923120000_live_leaderboard.sql`](../supabase/migrations/20260923120000_live_leaderboard.sql).
-3. Click **Run**. It should say _Success. No rows returned_.
-
-It is safe to run again. It creates:
-
-| Object               | Purpose                                                                                                 |
-| -------------------- | ------------------------------------------------------------------------------------------------------- |
-| `players` table      | **One row per player** with their best score, coins and height. This is the leaderboard.                |
-| `runs` table         | Every submitted run (history, stats, rate limiting)                                                     |
-| `submit_run()`       | Validates a run and keeps **`greatest(old_best, new_score)`**. Returns `best_score`, `is_best`, `rank`. |
-| `get_leaderboard(n)` | Top _n_ players, one row per person                                                                     |
-| `get_my_rank()`      | The current player's own row and rank, even outside the top 10                                          |
-| `set_player_name()`  | Renames the player when they edit the name bar                                                          |
-| RLS policies         | Anyone can **read** `players`; **nobody can insert, update or delete directly**                         |
-| Realtime             | Adds `players` to the `supabase_realtime` publication                                                   |
-
-To check: open **Table Editor**. You should see `players` and `runs`, both marked **RLS enabled**.
-
-## Step 4: Get the URL and publishable key
+## 3. Copy the URL and publishable key
 
 **Project Settings → API Keys** (and **Data API** for the URL):
 
 | Value           | Looks like                                                              |
 | --------------- | ----------------------------------------------------------------------- |
 | Project URL     | `https://abcdefghijklm.supabase.co`                                     |
-| Publishable key | `sb_publishable_…` (older projects: the **anon** key `eyJ…` also works) |
+| Publishable key | `sb_publishable_…` (older projects: the legacy **anon** key also works) |
 
-> ⚠️ **Never** use the `sb_secret_…` or `service_role` key in the game. It
-> bypasses all security. The publishable key is meant to be public. The RLS
-> policies and the `submit_run` checks are what protect the data.
+> ⚠️ Never use a `sb_secret_…` / `service_role` key in the game. It bypasses
+> every rule above. The publishable key is designed to be public.
 
-## Step 5: Local development
+## 4. Deploy on Vercel
+
+1. <https://vercel.com/new> → **Import** `levsage/DiliJump`.
+2. **Framework preset: Vite** (detected from `vercel.json`; no build settings to change).
+3. **Environment Variables** → add both, for Production and Preview:
+   - `VITE_SUPABASE_URL`
+   - `VITE_SUPABASE_PUBLISHABLE_KEY`
+4. Click **Deploy**.
+
+Vite embeds these values at **build time**. If you change them later, go to
+**Deployments → ⋯ → Redeploy**.
+
+Branches: `main` becomes Production. `beta` and PRs get Preview URLs automatically.
+
+## 5. Local development
 
 ```bash
-cp .env.example .env.local
-# edit .env.local:
-# VITE_SUPABASE_URL=https://abcdefghijklm.supabase.co
-# VITE_SUPABASE_PUBLISHABLE_KEY=sb_publishable_xxx
+cp .env.example .env.local   # fill in the two values
 npm run dev
 ```
 
-`.env.local` is git-ignored. Restart `npm run dev` after changing it.
+## Verify
 
-To test: enter a name, play one run, then open **🏆 Leaderboard**. The badge
-should say **LIVE**. Open the game in a second browser (or an incognito
-window), play with another name, and the first window updates by itself.
+- **In the game:** play a run, then open 🏆 Leaderboard. The badge should say **LIVE**.
+- **Automated:** Actions → **Supabase health check** → Run workflow (uses the GitHub secrets), or `npm run check:supabase` locally.
 
-## Step 6: Production (GitHub Pages)
+## Moderation
 
-The deploy workflow reads the values from repository **secrets**:
+**Table Editor → players**: delete a row to remove a player (their runs and
+secret are deleted with it). Useful snippets are in `supabase/snippets/`.
 
-1. GitHub → **Settings → Secrets and variables → Actions → New repository secret**
-   - `VITE_SUPABASE_URL`
-   - `VITE_SUPABASE_PUBLISHABLE_KEY`
-2. **Settings → Pages → Source = GitHub Actions** (one-time).
-3. Push to `main`, or re-run **Deploy to GitHub Pages** from the Actions tab.
+## Limits of a no-login design
 
----
-
-## How "highest score per person" is enforced
-
-It happens **on the server**, so a modified client can't lower or duplicate entries:
-
-```sql
-insert into players (...) values (...)
-on conflict (id) do update set
-  best_score = greatest(players.best_score, excluded.best_score),
-  -- best_coins / best_height / best_at only change when the score improves
-```
-
-- The player id is the Supabase Auth user id (`auth.uid()`). It is taken from the verified token, never from the request body.
-- Ties go to **whoever reached the score first** (`best_at`).
-- Renaming updates the same row, so a player can't appear twice by changing their name.
-
-## Anti-cheat (basic)
-
-A browser game can never be fully cheat-proof, but `submit_run` rejects:
-
-- scores that are impossible for the run time (`score > duration_s × 400 + 2000`)
-- more than 1 submission every 3 seconds per player
-- negative values, or names shorter than 2 characters
-- anything from signed-out visitors
-
-For stronger protection, add CAPTCHA to anonymous sign-ins. For moderation,
-you can delete a cheater's row in **Table Editor → players**.
-
-## Offline behaviour
-
-If a submission fails because of the network, the best unsent run is kept in
-`localStorage` and retried automatically. If Realtime is blocked, the open
-leaderboard polls every 15 s instead.
-
-## Verify your setup
-
-Checks the real project (key type, anonymous sign-ins, migration, RLS, anti-cheat, realtime):
-
-- **GitHub:** Actions → **Supabase health check** → _Run workflow_ (uses the repository secrets)
-- **Locally:** `npm run check:supabase` (reads `.env.local`)
+- A player is tied to one browser. Clearing site data creates a new player; the old entry stays on the board.
+- Anyone who reads the game code can send their own requests. The database checks (plausibility, rate limits) make cheating harder but can't stop it completely. That would need server-side game verification.
 
 ## Testing the SQL locally
 
 ```bash
-# needs a local PostgreSQL + psql (PGHOST/PGUSER/PGPASSWORD env vars)
-npm run test:db
+npm run test:db   # needs PostgreSQL + psql (PGHOST/PGUSER/PGPASSWORD)
 ```
 
-This runs the migration twice (it must be re-runnable) against a throwaway
-database with a tiny Supabase shim, then runs
-[`supabase/tests/leaderboard_test.sql`](../supabase/tests/leaderboard_test.sql):
-one-row-per-person, ordering, ranks, blocked direct writes, rate limit,
-validation and name sanitising. CI runs this on every push.
+This runs every migration twice against a throwaway database with a tiny
+Supabase shim, then the assertions in
+[`supabase/tests/leaderboard_test.sql`](../supabase/tests/leaderboard_test.sql).
+CI runs it on every push.
 
 ## Troubleshooting
 
-| Symptom                                          | Fix                                                                                                                          |
-| ------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------- |
-| Badge says **Offline · this device**             | Env vars not set. Check `.env.local` / Actions secrets, then restart or rebuild.                                             |
-| `Anonymous sign-ins are disabled` in the console | Step 2                                                                                                                       |
-| `function submit_run does not exist`             | Step 3 wasn't run in this project                                                                                            |
-| Board loads but never shows **LIVE**             | **Database → Publications → supabase_realtime**: make sure `players` is included. The board still auto-refreshes every 15 s. |
-| `Implausible score`                              | The server rejected the run (anti-cheat). Expected for tampered scores.                                                      |
+| Symptom                                  | Fix                                                                                                       |
+| ---------------------------------------- | --------------------------------------------------------------------------------------------------------- |
+| Badge says **Offline · this device**     | Env vars missing at build time. Add them in Vercel, then redeploy.                                        |
+| `function submit_score does not exist`   | Run migration 2                                                                                           |
+| Board loads but never shows **LIVE**     | **Database → Publications → supabase_realtime**: include `players`. The board still refreshes every 15 s. |
+| `Invalid player credentials`             | The browser's secret doesn't match (e.g. edited localStorage). Clear site data to become a new player.    |
+| `Too many new players from this network` | 30 new ids per IP per hour. Wait, or raise the limit in `authorize_player`.                               |
+| `Implausible score`                      | Anti-cheat rejected the run                                                                               |

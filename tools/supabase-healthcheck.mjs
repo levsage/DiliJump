@@ -3,14 +3,14 @@
  * Supabase health check for the DiliJump live leaderboard.
  *
  * Verifies a real Supabase project is set up as described in docs/SUPABASE.md:
- *   key type · anonymous sign-ins · migration (RPCs) · RLS · realtime
+ *   key type · migrations (RPCs) · RLS · no-login identities · realtime
  *
  * Usage:
  *   VITE_SUPABASE_URL=… VITE_SUPABASE_PUBLISHABLE_KEY=… node tools/supabase-healthcheck.mjs
  * (or run the "Supabase health check" GitHub Action, which uses repo secrets)
  *
- * Side effect: creates one anonymous user with a hidden score-0 row
- * (named "HealthCheck"), which never appears on the leaderboard.
+ * Side effect: creates one hidden score-0 player named "HealthCheck"
+ * (never shown on the leaderboard; remove with supabase/snippets/remove_test_players.sql).
  */
 import { createClient } from '@supabase/supabase-js';
 
@@ -141,28 +141,19 @@ const isMissingFn = (e) =>
 }
 
 // ---------------------------------------------------------------------------
-// 3. Anonymous sign-ins
+// 3. No-login identity (random id + secret, like the game creates)
 // ---------------------------------------------------------------------------
-const { data: auth, error: authErr } = await supabase.auth.signInAnonymously();
-if (authErr) {
-  const captcha = /captcha/i.test(authErr.message);
-  fail(
-    'auth',
-    `Anonymous sign-in failed: ${authErr.message}`,
-    captcha
-      ? 'CAPTCHA is enabled — the game needs Turnstile integration before CAPTCHA can be on'
-      : 'Authentication → Sign In / Providers → enable "Allow anonymous sign-ins" (Step 2)',
-  );
-  report();
-}
-ok('auth', 'Anonymous sign-ins are enabled');
-const uid = auth.user.id;
+const { randomUUID, randomBytes } = await import('node:crypto');
+const uid = randomUUID();
+const secret = randomBytes(24).toString('hex');
+const creds = { p_player_id: uid, p_secret: secret };
 
 // ---------------------------------------------------------------------------
-// 4. Server-side validation & RLS
+// 4. Validation & security
 // ---------------------------------------------------------------------------
 {
-  const { error } = await supabase.rpc('submit_run', {
+  const { error } = await supabase.rpc('submit_score', {
+    ...creds,
     p_name: 'x',
     p_score: 1,
     p_coins: 0,
@@ -170,13 +161,18 @@ const uid = auth.user.id;
     p_duration_ms: 1000,
   });
   if (error?.code === '22023')
-    ok('migration', 'submit_run() exists and validates input (rejected 1-char name)');
-  else if (isMissingFn(error))
-    fail('migration', 'submit_run() not found', 'Re-run the migration (Step 3)');
-  else
+    ok('migration', 'submit_score() exists and validates input (rejected 1-char name)');
+  else if (isMissingFn(error)) {
     fail(
       'migration',
-      `submit_run() validation unexpected: ${error ? error.message : 'accepted an invalid name'}`,
+      'submit_score() not found',
+      'Run supabase/migrations/20260923140000_no_login_players.sql (docs/SUPABASE.md step 2)',
+    );
+    report();
+  } else
+    fail(
+      'migration',
+      `submit_score() validation unexpected: ${error ? error.message : 'accepted an invalid name'}`,
     );
 }
 {
@@ -188,11 +184,23 @@ const uid = auth.user.id;
     fail(
       'security',
       'Direct INSERT into players succeeded — anyone could fake scores!',
-      'Re-run the migration; check RLS is enabled on public.players',
+      'Re-run migration 1; check RLS on public.players',
     );
 }
 {
-  const { error } = await supabase.rpc('submit_run', {
+  const { data, error } = await supabase.from('player_secrets').select('*').limit(1);
+  if (error || (data ?? []).length === 0)
+    ok('security', 'player_secrets is not readable by the public key');
+  else
+    fail(
+      'security',
+      'player_secrets is readable — secrets hashes are exposed!',
+      'Re-run migration 2',
+    );
+}
+{
+  const { error } = await supabase.rpc('submit_score', {
+    ...creds,
     p_name: 'HealthCheck',
     p_score: 99999999,
     p_coins: 0,
@@ -208,9 +216,8 @@ const uid = auth.user.id;
 }
 
 // ---------------------------------------------------------------------------
-// 5. Realtime — subscribe, then cause a change and wait for the event
+// 5. Realtime + a real (hidden, score 0) submission
 // ---------------------------------------------------------------------------
-await new Promise((r) => setTimeout(r, 3100)); // respect the 3 s rate limit
 {
   let gotEvent = false;
   let systemMsg = null;
@@ -221,7 +228,6 @@ await new Promise((r) => setTimeout(r, 3100)); // respect the 3 s rate limit
       .on('postgres_changes', { event: '*', schema: 'public', table: 'players' }, (payload) => {
         if (payload.new?.id === uid) gotEvent = true;
       })
-      // Realtime reports whether the database-level subscription succeeded here.
       .on('system', {}, (msg) => {
         systemMsg = msg;
       })
@@ -240,9 +246,7 @@ await new Promise((r) => setTimeout(r, 3100)); // respect the 3 s rate limit
       'Check Realtime is enabled for the project',
     );
   } else {
-    // wait for the server to confirm the postgres_changes subscription
     for (let i = 0; i < 40 && !systemMsg; i++) await new Promise((r) => setTimeout(r, 250));
-    console.log(`   realtime system message: ${JSON.stringify(systemMsg)}`);
     if (systemMsg && systemMsg.status !== 'ok') {
       fail(
         'realtime',
@@ -250,20 +254,19 @@ await new Promise((r) => setTimeout(r, 3100)); // respect the 3 s rate limit
         'Database → Publications → supabase_realtime → toggle "players" on',
       );
     }
-
-    // score 0 → row is created but hidden from the leaderboard (best_score > 0 filter)
-    const { data, error } = await supabase.rpc('submit_run', {
+    const { data, error } = await supabase.rpc('submit_score', {
+      ...creds,
       p_name: 'HealthCheck',
       p_score: 0,
       p_coins: 0,
       p_height: 0,
       p_duration_ms: 1000,
     });
-    if (error) fail('migration', `submit_run() valid run failed: ${error.message}`);
+    if (error) fail('migration', `submit_score() valid run failed: ${error.message}`);
     else
       ok(
         'migration',
-        `submit_run() accepted a valid run (best_score=${data?.[0]?.best_score ?? '?'})`,
+        `submit_score() registered a no-login player (best_score=${data?.[0]?.best_score ?? '?'})`,
       );
 
     for (let i = 0; i < 40 && !gotEvent; i++) await new Promise((r) => setTimeout(r, 250));
@@ -272,18 +275,34 @@ await new Promise((r) => setTimeout(r, 3100)); // respect the 3 s rate limit
       fail(
         'realtime',
         'Subscribed, but no change event arrived within 10 s',
-        'Database → Publications → supabase_realtime → include "players" (the game still polls every 15 s)',
+        'Database → Publications → supabase_realtime → include "players"',
       );
   }
 }
 
 // ---------------------------------------------------------------------------
-// 6. Own rank RPC
+// 6. Wrong secret, rename, own rank
 // ---------------------------------------------------------------------------
+await new Promise((r) => setTimeout(r, 3100));
 {
-  const { error } = await supabase.rpc('get_my_rank');
-  if (!error) ok('migration', 'get_my_rank() works for signed-in players');
-  else fail('migration', `get_my_rank() error: ${error.message}`, 'Re-run the migration (Step 3)');
+  const { error } = await supabase.rpc('rename_player', {
+    p_player_id: uid,
+    p_secret: 'w'.repeat(48),
+    p_name: 'Hacked',
+  });
+  if (error?.code === '28000')
+    ok('security', 'Wrong secret is rejected (cannot act as another player)');
+  else fail('security', `Wrong secret not rejected: ${error?.message ?? 'rename succeeded'}`);
+}
+{
+  const { error } = await supabase.rpc('rename_player', { ...creds, p_name: 'HealthCheck' });
+  if (!error) ok('migration', 'rename_player() works with the right secret');
+  else fail('migration', `rename_player() error: ${error.message}`);
+}
+{
+  const { error } = await supabase.rpc('get_player_rank', { p_player_id: uid });
+  if (!error) ok('migration', 'get_player_rank() works');
+  else fail('migration', `get_player_rank() error: ${error.message}`, 'Run migration 2');
 }
 
 await supabase.removeAllChannels();
