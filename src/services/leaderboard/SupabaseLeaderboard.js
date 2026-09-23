@@ -2,99 +2,72 @@ import { LEADERBOARD } from '../../config/constants.js';
 
 const PENDING_KEY = 'leaderboard:pending';
 const RETRY_MS = 4000;
-const TRANSIENT_RETRIES = 3;
-
-const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 /**
- * Live, global leaderboard backed by Supabase.
+ * Live, global leaderboard stored directly in the Supabase database.
+ * No backend server and no login:
  *
- * - Players are identified with **anonymous sign-ins** (no email/password).
- * - Runs go through the `submit_run` RPC, which keeps **only the highest
- *   score per person** (see supabase/migrations).
+ * - The player is identified by a random id + secret kept in the browser
+ *   (`PlayerIdentity`). The database stores only a hash of the secret.
+ * - Runs go through the `submit_score` SQL function, which keeps **only the
+ *   highest score per person** (see supabase/migrations).
  * - Changes to `public.players` are pushed through Supabase Realtime.
- * - If the network is down, the best unsent run is kept in localStorage
- *   and retried later, so a record is never lost.
+ * - If the network is down, the best unsent run is kept in localStorage and
+ *   retried later, so a record is never lost.
  */
 export class SupabaseLeaderboard {
   /**
    * @param {{ getClient: () => Promise<import('@supabase/supabase-js').SupabaseClient>,
-   *           storage: import('../Storage.js').Storage, limit?: number }} deps
+   *           storage: import('../Storage.js').Storage,
+   *           identity: import('../PlayerIdentity.js').PlayerIdentity,
+   *           limit?: number }} deps
    */
-  constructor({ getClient, storage, limit = LEADERBOARD.MAX_ENTRIES }) {
+  constructor({ getClient, storage, identity, limit = LEADERBOARD.MAX_ENTRIES }) {
     this.getClient = getClient;
     this.storage = storage;
+    this.identity = identity;
     this.limit = limit;
     this.mode = 'online';
     this.client = null;
-    this.userId = null;
     this.readyPromise = null;
     this.retryTimer = null;
     this.lastError = null;
   }
 
-  get isOnline() {
-    return Boolean(this.userId);
+  get playerId() {
+    return this.identity.playerId;
   }
 
-  /** Connect and sign in (idempotent). Never throws — failures are retried lazily. */
+  get isOnline() {
+    return Boolean(this.client);
+  }
+
+  /** Create the client (idempotent) and flush any unsent run. */
   init() {
     if (!this.readyPromise) {
-      this.readyPromise = this.connect().catch((err) => {
+      this.readyPromise = this.getClient().then((client) => {
+        this.client = client;
+        this.flushPending();
+        return this;
+      });
+      this.readyPromise.catch((err) => {
         this.readyPromise = null; // allow a later retry
         this.lastError = err;
-        throw err;
       });
-      this.readyPromise.catch(() => {});
     }
     return this.readyPromise;
   }
 
-  async connect() {
-    this.client ??= await this.getClient();
-    const { data, error } = await this.client.auth.getSession();
-    if (error) throw error;
-
-    let user = data?.session?.user;
-    if (!user) {
-      const res = await this.client.auth.signInAnonymously();
-      if (res.error) throw res.error;
-      user = res.data.user;
-    }
-    this.userId = user.id;
-    this.lastError = null;
-    this.flushPending();
-    return this;
-  }
-
-  /**
-   * Call a Postgres function. Transient auth errors are retried:
-   * right after an anonymous sign-in, the token's `iat` can be a few hundred
-   * ms ahead of the database server clock and PostgREST answers
-   * 401 PGRST303 "JWT issued at future". Waiting a moment fixes it.
-   */
-  async rpc(fn, args, attempt = 0) {
+  async rpc(fn, args) {
     await this.init();
     const { data, error } = await this.client.rpc(fn, args);
-    if (!error) return data;
-    if (SupabaseLeaderboard.isTransient(error) && attempt < TRANSIENT_RETRIES) {
-      await sleep(this.retryDelay(attempt));
-      return this.rpc(fn, args, attempt + 1);
-    }
-    throw error;
+    if (error) throw error;
+    return data;
   }
 
-  retryDelay(attempt) {
-    return 800 * (attempt + 1);
-  }
-
-  /** Clock-skew / expired-token errors that succeed on a retry. */
-  static isTransient(err) {
-    return (
-      err?.code === 'PGRST303' ||
-      err?.code === 'PGRST301' ||
-      /issued at future|jwt expired/i.test(err?.message ?? '')
-    );
+  credentials() {
+    const { playerId, secret } = this.identity.get();
+    return { p_player_id: playerId, p_secret: secret };
   }
 
   /**
@@ -103,7 +76,8 @@ export class SupabaseLeaderboard {
   async submit({ name, score, coins = 0, height = 0, durationMs = 0 }) {
     const run = { name, score, coins, height, durationMs: Math.round(durationMs) };
     try {
-      const rows = await this.rpc('submit_run', {
+      const rows = await this.rpc('submit_score', {
+        ...this.credentials(),
         p_name: run.name,
         p_score: run.score,
         p_coins: run.coins,
@@ -119,19 +93,20 @@ export class SupabaseLeaderboard {
       };
     } catch (err) {
       this.lastError = err;
-      if (!SupabaseLeaderboard.isRejected(err)) this.queue(run);
+      const rejected = SupabaseLeaderboard.isRejected(err);
+      if (!rejected) this.queue(run);
       return {
         rank: 0,
         isBest: false,
         bestScore: score,
         online: false,
-        queued: !SupabaseLeaderboard.isRejected(err),
+        queued: !rejected,
         error: err?.message ?? String(err),
       };
     }
   }
 
-  /** Validation errors from the server should not be retried. */
+  /** Validation / credential errors from the database are final — don't retry. */
   static isRejected(err) {
     return err?.code === '22023' || err?.code === '28000';
   }
@@ -155,7 +130,7 @@ export class SupabaseLeaderboard {
     await this.submit(pending); // re-queues itself on failure
   }
 
-  static mapRow(r, userId) {
+  static mapRow(r, playerId) {
     return {
       id: r.player_id,
       rank: Number(r.rank),
@@ -164,26 +139,27 @@ export class SupabaseLeaderboard {
       coins: r.best_coins,
       height: r.best_height,
       date: r.best_at ? Date.parse(r.best_at) : Date.now(),
-      isMe: r.player_id === userId,
+      isMe: r.player_id === playerId,
     };
   }
 
   async top(limit = this.limit) {
     const rows = await this.rpc('get_leaderboard', { p_limit: limit });
-    return (rows ?? []).map((r) => SupabaseLeaderboard.mapRow(r, this.userId));
+    return (rows ?? []).map((r) => SupabaseLeaderboard.mapRow(r, this.playerId));
   }
 
   async myEntry() {
-    const rows = await this.rpc('get_my_rank');
+    const rows = await this.rpc('get_player_rank', { p_player_id: this.playerId });
     const row = Array.isArray(rows) ? rows[0] : rows;
-    return row ? SupabaseLeaderboard.mapRow(row, this.userId) : null;
+    return row ? SupabaseLeaderboard.mapRow(row, this.playerId) : null;
   }
 
+  /** Rename on the board. Before the first submitted run there is nothing to rename. */
   async rename(_oldName, newName) {
     try {
-      await this.rpc('set_player_name', { p_name: newName });
+      await this.rpc('rename_player', { ...this.credentials(), p_name: newName });
     } catch (err) {
-      this.lastError = err;
+      if (err?.code !== '28000') this.lastError = err; // 28000 = not registered yet
     }
   }
 

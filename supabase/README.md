@@ -8,5 +8,6 @@ Database code for the live leaderboard. Setup guide: [`docs/SUPABASE.md`](../doc
 | `tests/supabase_shim.sql`    | Minimal stand-in for `auth.uid()`, roles and the realtime publication, so migrations can be tested on plain Postgres |
 | `tests/leaderboard_test.sql` | Assertions for the leaderboard rules and security                                                                    |
 | `tests/run-local.sh`         | `npm run test:db`                                                                                                    |
+| `snippets/`                  | One-off admin SQL: reset the leaderboard, remove test players, drop the legacy v1.1 auth functions                   |
 
 Naming: `YYYYMMDDHHMMSS_description.sql` (compatible with the Supabase CLI).

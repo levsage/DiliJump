@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { Storage, MemoryBackend } from '../src/services/Storage.js';
 import { LocalLeaderboard } from '../src/services/leaderboard/LocalLeaderboard.js';
 import { SupabaseLeaderboard } from '../src/services/leaderboard/SupabaseLeaderboard.js';
+import { PlayerIdentity } from '../src/services/PlayerIdentity.js';
 
 let storage;
 beforeEach(() => {
@@ -68,25 +69,54 @@ describe('LocalLeaderboard — one best entry per person', () => {
   });
 });
 
-/** Minimal fake of the parts of supabase-js we use. */
-function fakeClient({ rpcImpl, session = null } = {}) {
+/** Minimal fake of the parts of supabase-js we use (no auth!). */
+function fakeClient({ rpcImpl } = {}) {
   return {
-    auth: {
-      getSession: vi.fn(async () => ({ data: { session }, error: null })),
-      signInAnonymously: vi.fn(async () => ({ data: { user: { id: 'user-1' } }, error: null })),
-    },
+    auth: { signInAnonymously: vi.fn(), getSession: vi.fn() },
     rpc: vi.fn(rpcImpl ?? (async () => ({ data: [], error: null }))),
     channel: vi.fn(),
     removeChannel: vi.fn(),
   };
 }
 
-describe('SupabaseLeaderboard', () => {
-  it('signs in anonymously and submits through the submit_run RPC', async () => {
+const makeLb = (client, extra = {}) =>
+  new SupabaseLeaderboard({
+    getClient: async () => client,
+    storage,
+    identity: new PlayerIdentity(storage),
+    ...extra,
+  });
+
+describe('PlayerIdentity (browser-only, no login)', () => {
+  it('creates a UUID + secret once and keeps it', () => {
+    const a = new PlayerIdentity(storage).get();
+    expect(a.playerId).toMatch(/^[0-9a-f-]{36}$/);
+    expect(a.secret.length).toBeGreaterThanOrEqual(32);
+    expect(new PlayerIdentity(storage).get()).toEqual(a);
+  });
+
+  it('replaces corrupt stored identities', () => {
+    storage.set('identity', { playerId: 'nope', secret: 'x' });
+    expect(PlayerIdentity.isValid(new PlayerIdentity(storage).get())).toBe(true);
+  });
+});
+
+describe('SupabaseLeaderboard (database only, no login)', () => {
+  it('never uses Supabase Auth', async () => {
+    const client = fakeClient();
+    const lb = makeLb(client);
+    await lb.top();
+    await lb.submit({ name: 'A', score: 1 });
+    expect(client.auth.signInAnonymously).not.toHaveBeenCalled();
+    expect(client.auth.getSession).not.toHaveBeenCalled();
+  });
+
+  it('submits through submit_score with the browser identity', async () => {
     const client = fakeClient({
       rpcImpl: async () => ({ data: [{ best_score: 900, is_best: true, rank: 3 }], error: null }),
     });
-    const lb = new SupabaseLeaderboard({ getClient: async () => client, storage });
+    const lb = makeLb(client);
+    const { playerId, secret } = new PlayerIdentity(storage).get();
 
     const res = await lb.submit({
       name: 'Alice',
@@ -96,8 +126,9 @@ describe('SupabaseLeaderboard', () => {
       durationMs: 61234.7,
     });
 
-    expect(client.auth.signInAnonymously).toHaveBeenCalledOnce();
-    expect(client.rpc).toHaveBeenCalledWith('submit_run', {
+    expect(client.rpc).toHaveBeenCalledWith('submit_score', {
+      p_player_id: playerId,
+      p_secret: secret,
       p_name: 'Alice',
       p_score: 900,
       p_coins: 4,
@@ -107,17 +138,9 @@ describe('SupabaseLeaderboard', () => {
     expect(res).toEqual({ rank: 3, isBest: true, bestScore: 900, online: true });
   });
 
-  it('reuses an existing session instead of creating a new player', async () => {
-    const client = fakeClient({ session: { user: { id: 'existing' } } });
-    const lb = new SupabaseLeaderboard({ getClient: async () => client, storage });
-    await lb.init();
-    expect(client.auth.signInAnonymously).not.toHaveBeenCalled();
-    expect(lb.userId).toBe('existing');
-  });
-
   it('maps leaderboard rows and flags the current player', async () => {
+    const me = new PlayerIdentity(storage).get().playerId;
     const client = fakeClient({
-      session: { user: { id: 'me' } },
       rpcImpl: async () => ({
         data: [
           {
@@ -131,7 +154,7 @@ describe('SupabaseLeaderboard', () => {
           },
           {
             rank: 2,
-            player_id: 'me',
+            player_id: me,
             name: 'Me',
             best_score: 500,
             best_coins: 2,
@@ -142,8 +165,7 @@ describe('SupabaseLeaderboard', () => {
         error: null,
       }),
     });
-    const lb = new SupabaseLeaderboard({ getClient: async () => client, storage });
-    const top = await lb.top(10);
+    const top = await makeLb(client).top(10);
     expect(client.rpc).toHaveBeenCalledWith('get_leaderboard', { p_limit: 10 });
     expect(top.map((e) => [e.rank, e.name, e.score, e.isMe])).toEqual([
       [1, 'Top', 999, false],
@@ -151,80 +173,54 @@ describe('SupabaseLeaderboard', () => {
     ]);
   });
 
+  it('looks up the own rank by player id', async () => {
+    const client = fakeClient();
+    const lb = makeLb(client);
+    await lb.myEntry();
+    expect(client.rpc).toHaveBeenCalledWith('get_player_rank', { p_player_id: lb.playerId });
+  });
+
+  it('renames with credentials', async () => {
+    const client = fakeClient({ rpcImpl: async () => ({ data: 'New', error: null }) });
+    const lb = makeLb(client);
+    await lb.rename('Old', 'New');
+    expect(client.rpc).toHaveBeenCalledWith(
+      'rename_player',
+      expect.objectContaining({ p_name: 'New', p_player_id: lb.playerId }),
+    );
+  });
+
   it('queues the best unsent run when offline and flushes it later', async () => {
     let online = false;
     const client = fakeClient({
-      session: { user: { id: 'me' } },
       rpcImpl: async (fn, args) =>
         online
           ? { data: [{ best_score: args.p_score, is_best: true, rank: 1 }], error: null }
           : { data: null, error: { message: 'Failed to fetch' } },
     });
-    const lb = new SupabaseLeaderboard({ getClient: async () => client, storage });
-    lb.scheduleRetry = () => {}; // no timers in tests
+    const lb = makeLb(client);
+    lb.scheduleRetry = () => {};
 
     expect((await lb.submit({ name: 'A', score: 300 })).queued).toBe(true);
-    await lb.submit({ name: 'A', score: 100 }); // worse — should not replace the pending one
+    await lb.submit({ name: 'A', score: 100 });
     expect(storage.get('leaderboard:pending').score).toBe(300);
 
     online = true;
     await lb.flushPending();
     expect(storage.get('leaderboard:pending')).toBeNull();
     expect(client.rpc).toHaveBeenLastCalledWith(
-      'submit_run',
+      'submit_score',
       expect.objectContaining({ p_score: 300 }),
     );
   });
 
-  it('does not retry runs the server rejected as invalid', async () => {
+  it('does not retry runs the database rejected', async () => {
     const client = fakeClient({
-      session: { user: { id: 'me' } },
       rpcImpl: async () => ({ data: null, error: { code: '22023', message: 'Implausible score' } }),
     });
-    const lb = new SupabaseLeaderboard({ getClient: async () => client, storage });
+    const lb = makeLb(client);
     const res = await lb.submit({ name: 'A', score: 1e9 });
     expect(res.queued).toBe(false);
     expect(storage.get('leaderboard:pending')).toBeNull();
-  });
-
-  it('retries "JWT issued at future" (clock skew right after sign-in)', async () => {
-    let calls = 0;
-    const client = fakeClient({
-      rpcImpl: async () =>
-        ++calls === 1
-          ? { data: null, error: { code: 'PGRST303', message: 'JWT issued at future' } }
-          : {
-              data: [
-                {
-                  rank: 1,
-                  player_id: 'user-1',
-                  name: 'A',
-                  best_score: 5,
-                  best_coins: 0,
-                  best_height: 0,
-                  best_at: null,
-                },
-              ],
-              error: null,
-            },
-    });
-    const lb = new SupabaseLeaderboard({ getClient: async () => client, storage });
-    lb.retryDelay = () => 0;
-    const top = await lb.top();
-    expect(calls).toBe(2);
-    expect(top[0].isMe).toBe(true);
-  });
-
-  it('gives up after a few transient failures', async () => {
-    const client = fakeClient({
-      rpcImpl: async () => ({
-        data: null,
-        error: { code: 'PGRST303', message: 'JWT issued at future' },
-      }),
-    });
-    const lb = new SupabaseLeaderboard({ getClient: async () => client, storage });
-    lb.retryDelay = () => 0;
-    await expect(lb.top()).rejects.toMatchObject({ code: 'PGRST303' });
-    expect(client.rpc).toHaveBeenCalledTimes(4);
   });
 });
