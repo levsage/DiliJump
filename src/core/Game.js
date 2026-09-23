@@ -90,20 +90,28 @@ export class Game {
   finishRun() {
     if (this.state !== GAME_STATES.PLAYING) return;
     const score = this.world.totalScore;
+    const height = Math.floor(this.world.altitude);
     const coins = this.wallet.commitRun();
     const isBest = this.profile.recordRun(score);
-    const rank = this.leaderboard.submit({
-      name: this.profile.name,
-      score,
-      coins,
-      height: Math.floor(this.world.altitude),
-    });
-    if (isBest || rank === 1) this.audio.highScore();
+    if (isBest) this.audio.highScore();
     else this.audio.gameOver();
 
-    this.lastResult = { score, coins, isBest, rank, height: Math.floor(this.world.altitude) };
-    // brief delay so the fall animation reads before the panel appears
+    // Show the scoreboard right away; the leaderboard rank arrives async.
+    this.lastResult = { score, coins, isBest, height, rank: null, pending: true };
     setTimeout(() => this.setState(GAME_STATES.GAME_OVER), 650);
+
+    this.leaderboard
+      .submit({
+        name: this.profile.name,
+        score,
+        coins,
+        height,
+        durationMs: this.world.elapsed * 1000,
+      })
+      .then((res) => {
+        Object.assign(this.lastResult, { ...res, isBest: isBest || res.isBest, pending: false });
+        this.events.emit(EVENTS.RUN_SUBMITTED, this.lastResult);
+      });
   }
 
   update(dt) {

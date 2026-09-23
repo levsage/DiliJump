@@ -27,7 +27,10 @@ export class UIManager {
     this.menu = new MenuScreen({
       profile,
       wallet,
-      onNameChange: () => this.hud.refreshProfile(),
+      onNameChange: (name, oldName) => {
+        this.hud.refreshProfile();
+        leaderboard.rename(oldName, name);
+      },
     });
     this.gameOver = new GameOverScreen({ profile, wallet });
     this.board = new LeaderboardScreen({ leaderboard, profile });
@@ -36,6 +39,7 @@ export class UIManager {
     this.bindActions();
     this.bindShootButton();
     events.on(EVENTS.STATE_CHANGE, ({ state }) => this.onState(state));
+    events.on(EVENTS.RUN_SUBMITTED, (result) => this.gameOver.populate(result));
 
     const touch = window.matchMedia('(pointer: coarse)').matches;
     document.body.classList.toggle('is-touch', touch);
@@ -84,17 +88,18 @@ export class UIManager {
   }
 
   openLeaderboard() {
-    this.board.refresh();
-    this.leaderboardReturn = this.game.state;
     this.screens.leaderboard.hidden = false;
+    this.board.open();
   }
 
   closeLeaderboard() {
+    this.board.close();
     this.screens.leaderboard.hidden = true;
   }
 
   onState(state) {
     const s = this.screens;
+    if (!s.leaderboard.hidden) this.board.close();
     for (const el of Object.values(s)) el.hidden = true;
     const playing = state === GAME_STATES.PLAYING || state === GAME_STATES.PAUSED;
     this.hud.show(playing);

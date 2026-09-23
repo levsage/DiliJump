@@ -1,0 +1,30 @@
+name: Supabase health check
+
+# Verifies the live-leaderboard backend using the repository secrets.
+# Run manually from the Actions tab, or automatically when leaderboard code changes.
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - 'supabase/**'
+      - 'src/services/**'
+      - 'tools/supabase-healthcheck.mjs'
+      - '.github/workflows/supabase-health.yml'
+
+jobs:
+  health:
+    name: Check Supabase project
+    runs-on: ubuntu-latest
+    # secrets are not available to PRs from forks
+    if: github.event_name == 'workflow_dispatch' || github.event.pull_request.head.repo.full_name == github.repository
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - run: node tools/supabase-healthcheck.mjs
+        env:
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY }}

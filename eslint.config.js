@@ -6,7 +6,7 @@ export default [
   { ignores: ['dist/**', 'coverage/**', 'node_modules/**', 'art/**', 'public/**'] },
   js.configs.recommended,
   {
-    files: ['**/*.js'],
+    files: ['**/*.{js,mjs}'],
     languageOptions: {
       ecmaVersion: 2022,
       sourceType: 'module',
@@ -20,7 +20,7 @@ export default [
     },
   },
   {
-    files: ['tests/**/*.js', '*.config.js'],
+    files: ['tests/**/*.js', '*.config.js', 'tools/**/*.{js,mjs}'],
     languageOptions: { globals: { ...globals.node } },
   },
   prettier,

@@ -37,11 +37,12 @@ export class MenuScreen {
       if (!silent) setText('name-error', result.error, this.root);
       return false;
     }
+    const oldName = this.profile.data.name;
     this.profile.setName(result.name);
     this.input.value = result.name;
     this.form.classList.add('is-saved');
     setText('name-error', '', this.root);
-    this.onNameChange?.(result.name);
+    if (oldName !== result.name) this.onNameChange?.(result.name, oldName);
     return true;
   }
 
