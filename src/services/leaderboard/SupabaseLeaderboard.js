@@ -85,6 +85,7 @@ export class SupabaseLeaderboard {
         p_duration_ms: run.durationMs,
       });
       const row = Array.isArray(rows) ? rows[0] : rows;
+      this.identity.markRegistered?.();
       return {
         rank: Number(row?.rank ?? 0),
         isBest: Boolean(row?.is_best),
@@ -154,8 +155,12 @@ export class SupabaseLeaderboard {
     return row ? SupabaseLeaderboard.mapRow(row, this.playerId) : null;
   }
 
-  /** Rename on the board. Before the first submitted run there is nothing to rename. */
+  /**
+   * Rename on the board. Before the first accepted run the player doesn't
+   * exist in the database yet — the name is simply sent with that first run.
+   */
   async rename(_oldName, newName) {
+    if (this.identity.registered === false) return;
     try {
       await this.rpc('rename_player', { ...this.credentials(), p_name: newName });
     } catch (err) {

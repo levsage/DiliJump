@@ -6,6 +6,13 @@ and the project uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [1.2.1] - 2026-09-23
+
+### Fixed
+
+- New players no longer get a `403` from `rename_player` before their first score: the name is sent with the first run instead.
+- Builds on Vercel/CI now print a clear warning when `VITE_SUPABASE_URL` / `VITE_SUPABASE_PUBLISHABLE_KEY` are missing (previously the site silently fell back to the offline board).
+
 ## [1.2.0] - 2026-09-23
 
 ### Changed
@@ -63,7 +70,8 @@ and the project uses [Semantic Versioning](https://semver.org/).
 - Keyboard and touch controls, responsive layout, PWA manifest.
 - Tooling: Vite, ESLint, Prettier, Vitest, GitHub Actions CI and GitHub Pages deploy.
 
-[Unreleased]: https://github.com/levsage/DiliJump/compare/v1.2.0...HEAD
+[Unreleased]: https://github.com/levsage/DiliJump/compare/v1.2.1...HEAD
+[1.2.1]: https://github.com/levsage/DiliJump/compare/v1.2.0...v1.2.1
 [1.2.0]: https://github.com/levsage/DiliJump/compare/v1.1.1...v1.2.0
 [1.1.1]: https://github.com/levsage/DiliJump/compare/v1.1.0...v1.1.1
 [1.1.0]: https://github.com/levsage/DiliJump/compare/v1.0.0...v1.1.0
