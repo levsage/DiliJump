@@ -2,6 +2,9 @@ import { LEADERBOARD } from '../../config/constants.js';
 
 const PENDING_KEY = 'leaderboard:pending';
 const RETRY_MS = 4000;
+const TRANSIENT_RETRIES = 3;
+
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 /**
  * Live, global leaderboard backed by Supabase.
@@ -64,11 +67,34 @@ export class SupabaseLeaderboard {
     return this;
   }
 
-  async rpc(fn, args) {
+  /**
+   * Call a Postgres function. Transient auth errors are retried:
+   * right after an anonymous sign-in, the token's `iat` can be a few hundred
+   * ms ahead of the database server clock and PostgREST answers
+   * 401 PGRST303 "JWT issued at future". Waiting a moment fixes it.
+   */
+  async rpc(fn, args, attempt = 0) {
     await this.init();
     const { data, error } = await this.client.rpc(fn, args);
-    if (error) throw error;
-    return data;
+    if (!error) return data;
+    if (SupabaseLeaderboard.isTransient(error) && attempt < TRANSIENT_RETRIES) {
+      await sleep(this.retryDelay(attempt));
+      return this.rpc(fn, args, attempt + 1);
+    }
+    throw error;
+  }
+
+  retryDelay(attempt) {
+    return 800 * (attempt + 1);
+  }
+
+  /** Clock-skew / expired-token errors that succeed on a retry. */
+  static isTransient(err) {
+    return (
+      err?.code === 'PGRST303' ||
+      err?.code === 'PGRST301' ||
+      /issued at future|jwt expired/i.test(err?.message ?? '')
+    );
   }
 
   /**
