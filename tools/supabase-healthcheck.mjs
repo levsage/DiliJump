@@ -213,6 +213,7 @@ const uid = auth.user.id;
 await new Promise((r) => setTimeout(r, 3100)); // respect the 3 s rate limit
 {
   let gotEvent = false;
+  let systemMsg = null;
   const subscribed = await new Promise((resolve) => {
     const timer = setTimeout(() => resolve('TIMED_OUT'), 15000);
     supabase
@@ -220,10 +221,14 @@ await new Promise((r) => setTimeout(r, 3100)); // respect the 3 s rate limit
       .on('postgres_changes', { event: '*', schema: 'public', table: 'players' }, (payload) => {
         if (payload.new?.id === uid) gotEvent = true;
       })
-      .subscribe((status) => {
+      // Realtime reports whether the database-level subscription succeeded here.
+      .on('system', {}, (msg) => {
+        systemMsg = msg;
+      })
+      .subscribe((status, err) => {
         if (status !== 'CLOSED') {
           clearTimeout(timer);
-          resolve(status);
+          resolve(err ? `${status}: ${err.message}` : status);
         }
       });
   });
@@ -235,6 +240,17 @@ await new Promise((r) => setTimeout(r, 3100)); // respect the 3 s rate limit
       'Check Realtime is enabled for the project',
     );
   } else {
+    // wait for the server to confirm the postgres_changes subscription
+    for (let i = 0; i < 40 && !systemMsg; i++) await new Promise((r) => setTimeout(r, 250));
+    console.log(`   realtime system message: ${JSON.stringify(systemMsg)}`);
+    if (systemMsg && systemMsg.status !== 'ok') {
+      fail(
+        'realtime',
+        `Realtime could not watch public.players: ${systemMsg.message ?? JSON.stringify(systemMsg)}`,
+        'Database → Publications → supabase_realtime → toggle "players" on',
+      );
+    }
+
     // score 0 → row is created but hidden from the leaderboard (best_score > 0 filter)
     const { data, error } = await supabase.rpc('submit_run', {
       p_name: 'HealthCheck',
