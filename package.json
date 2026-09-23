@@ -38,7 +38,8 @@
     "format:check": "prettier --check .",
     "check": "npm run lint && npm run format:check && npm run test && npm run build",
     "sprites": "python3 tools/process_sprites.py art/poses public/assets/sprites 320",
-    "test:db": "bash supabase/tests/run-local.sh"
+    "test:db": "bash supabase/tests/run-local.sh",
+    "check:supabase": "node --env-file-if-exists=.env.local tools/supabase-healthcheck.mjs"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.5",

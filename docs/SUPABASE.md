@@ -129,6 +129,13 @@ If a submission fails because of the network, the best unsent run is kept in
 `localStorage` and retried automatically. If Realtime is blocked, the open
 leaderboard polls every 15 s instead.
 
+## Verify your setup
+
+Checks the real project (key type, anonymous sign-ins, migration, RLS, anti-cheat, realtime):
+
+- **GitHub:** Actions → **Supabase health check** → _Run workflow_ (uses the repository secrets)
+- **Locally:** `npm run check:supabase` (reads `.env.local`)
+
 ## Testing the SQL locally
 
 ```bash
