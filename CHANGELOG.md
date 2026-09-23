@@ -6,6 +6,13 @@ and the project uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [1.1.1] - 2026-09-23
+
+### Fixed
+
+- Leaderboard failed to load for new players with `401 PGRST303 "JWT issued at future"`. The token from a fresh anonymous sign-in could be slightly ahead of the database clock. Such requests are now retried with a short backoff.
+- The open leaderboard panel now keeps retrying after an error, even while realtime is connected (it used to stay "Offline").
+
 ## [1.1.0] - 2026-09-23
 
 ### Added
@@ -38,6 +45,7 @@ and the project uses [Semantic Versioning](https://semver.org/).
 - Keyboard and touch controls, responsive layout, PWA manifest.
 - Tooling: Vite, ESLint, Prettier, Vitest, GitHub Actions CI and GitHub Pages deploy.
 
-[Unreleased]: https://github.com/levsage/DiliJump/compare/v1.1.0...HEAD
+[Unreleased]: https://github.com/levsage/DiliJump/compare/v1.1.1...HEAD
+[1.1.1]: https://github.com/levsage/DiliJump/compare/v1.1.0...v1.1.1
 [1.1.0]: https://github.com/levsage/DiliJump/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/levsage/DiliJump/releases/tag/v1.0.0

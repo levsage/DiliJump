@@ -10,6 +10,7 @@ const STATUS_TEXT = {
   error: 'Offline · retrying',
 };
 const POLL_MS = 15000;
+const ERROR_RETRY_MS = 3000;
 
 /**
  * Leaderboard panel. One row per person (their best score). When backed by
@@ -61,7 +62,7 @@ export class LeaderboardScreen {
       );
       // Fallback when realtime is blocked (proxies, disabled replication…).
       this.pollTimer = setInterval(() => {
-        if (this.realtime !== 'live') this.refresh({ quiet: true });
+        if (this.realtime !== 'live' || !this.dataOk) this.refresh({ quiet: true });
       }, POLL_MS);
     }
     this.refresh();
@@ -71,6 +72,7 @@ export class LeaderboardScreen {
     this.unsubscribe?.();
     this.unsubscribe = null;
     clearInterval(this.pollTimer);
+    clearTimeout(this.errorRetry);
     this.pollTimer = null;
   }
 
@@ -92,7 +94,11 @@ export class LeaderboardScreen {
       console.warn('[leaderboard]', err);
       this.dataOk = false;
       this.setStatus('error');
-      if (!quiet) this.render([], null, 'Could not load the leaderboard. Check your connection.');
+      if (!quiet) this.render([], null, 'Could not load the leaderboard. Retrying…');
+      // Keep trying quickly while the panel is open (don't wait for the poll).
+      clearTimeout(this.errorRetry);
+      if (this.pollTimer)
+        this.errorRetry = setTimeout(() => this.refresh({ quiet: true }), ERROR_RETRY_MS);
     } finally {
       if (id === this.requestId) this.root.classList.remove('is-loading');
     }

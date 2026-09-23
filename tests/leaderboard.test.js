@@ -186,4 +186,45 @@ describe('SupabaseLeaderboard', () => {
     expect(res.queued).toBe(false);
     expect(storage.get('leaderboard:pending')).toBeNull();
   });
+
+  it('retries "JWT issued at future" (clock skew right after sign-in)', async () => {
+    let calls = 0;
+    const client = fakeClient({
+      rpcImpl: async () =>
+        ++calls === 1
+          ? { data: null, error: { code: 'PGRST303', message: 'JWT issued at future' } }
+          : {
+              data: [
+                {
+                  rank: 1,
+                  player_id: 'user-1',
+                  name: 'A',
+                  best_score: 5,
+                  best_coins: 0,
+                  best_height: 0,
+                  best_at: null,
+                },
+              ],
+              error: null,
+            },
+    });
+    const lb = new SupabaseLeaderboard({ getClient: async () => client, storage });
+    lb.retryDelay = () => 0;
+    const top = await lb.top();
+    expect(calls).toBe(2);
+    expect(top[0].isMe).toBe(true);
+  });
+
+  it('gives up after a few transient failures', async () => {
+    const client = fakeClient({
+      rpcImpl: async () => ({
+        data: null,
+        error: { code: 'PGRST303', message: 'JWT issued at future' },
+      }),
+    });
+    const lb = new SupabaseLeaderboard({ getClient: async () => client, storage });
+    lb.retryDelay = () => 0;
+    await expect(lb.top()).rejects.toMatchObject({ code: 'PGRST303' });
+    expect(client.rpc).toHaveBeenCalledTimes(4);
+  });
 });
