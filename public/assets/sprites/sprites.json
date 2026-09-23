@@ -1,0 +1,44 @@
+{
+  "canvas": [
+    248,
+    320
+  ],
+  "anchor": "bottom-center",
+  "frames": {
+    "idle": {
+      "file": "idle.png",
+      "w": 208,
+      "h": 300
+    },
+    "jump": {
+      "file": "jump.png",
+      "w": 208,
+      "h": 308
+    },
+    "fall": {
+      "file": "fall.png",
+      "w": 240,
+      "h": 320
+    },
+    "crouch": {
+      "file": "crouch.png",
+      "w": 209,
+      "h": 261
+    },
+    "shoot": {
+      "file": "shoot.png",
+      "w": 208,
+      "h": 310
+    },
+    "hurt": {
+      "file": "hurt.png",
+      "w": 229,
+      "h": 288
+    },
+    "cheer": {
+      "file": "cheer.png",
+      "w": 208,
+      "h": 306
+    }
+  }
+}
