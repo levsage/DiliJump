@@ -33,6 +33,7 @@ export class World {
     this.bonus = 0;
     this.coinsCollected = 0;
     this.maxHeight = 0;
+    this.elapsed = 0; // seconds of simulated play (pauses excluded)
     this.over = false;
 
     this.generator = new LevelGenerator(this, { seed });
@@ -55,6 +56,7 @@ export class World {
 
   update(dt, input) {
     const { player, camera } = this;
+    if (!this.over) this.elapsed += dt;
     const axis = player.alive ? input.axis : 0;
 
     if (player.alive && input.consumeShoot() && player.canShoot()) {

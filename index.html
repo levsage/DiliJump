@@ -165,10 +165,17 @@
       <section id="screen-leaderboard" class="screen screen--overlay" hidden>
         <div class="panel leaderboard">
           <h2 class="panel__title">🏆 Leaderboard</h2>
+          <p class="leaderboard__status" data-bind="leaderboard-status" data-status="local"></p>
           <ol class="leaderboard__list" data-bind="leaderboard"></ol>
           <p class="leaderboard__empty" data-bind="leaderboard-empty">
             No scores yet — be the first!
           </p>
+          <ol
+            class="leaderboard__list leaderboard__list--me"
+            data-bind="leaderboard-me"
+            hidden
+          ></ol>
+          <p class="leaderboard__note">Best score per player</p>
           <button class="btn btn--primary" data-action="close-leaderboard">Back</button>
         </div>
       </section>

@@ -32,4 +32,5 @@ export const EVENTS = Object.freeze({
   PLAYER_HIT: 'player:hit',
   GAME_OVER: 'game:over',
   HUD_COINS: 'hud:coins',
+  RUN_SUBMITTED: 'run:submitted',
 });
