@@ -54,4 +54,15 @@ export class PlayerIdentity {
   get playerId() {
     return this.get().playerId;
   }
+
+  /** True once the database has accepted a score from this browser. */
+  get registered() {
+    return Boolean(this.get().registeredAt);
+  }
+
+  markRegistered() {
+    if (this.registered) return;
+    this.cached = { ...this.get(), registeredAt: Date.now() };
+    this.storage.set(KEY, this.cached);
+  }
 }

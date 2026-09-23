@@ -180,8 +180,23 @@ describe('SupabaseLeaderboard (database only, no login)', () => {
     expect(client.rpc).toHaveBeenCalledWith('get_player_rank', { p_player_id: lb.playerId });
   });
 
-  it('renames with credentials', async () => {
+  it('does not call rename_player before the first accepted run', async () => {
+    const client = fakeClient();
+    await makeLb(client).rename('Old', 'New');
+    expect(client.rpc).not.toHaveBeenCalled();
+  });
+
+  it('remembers registration after the first accepted run', async () => {
+    const client = fakeClient({
+      rpcImpl: async () => ({ data: [{ best_score: 5, is_best: true, rank: 1 }], error: null }),
+    });
+    await makeLb(client).submit({ name: 'A', score: 5 });
+    expect(new PlayerIdentity(storage).registered).toBe(true);
+  });
+
+  it('renames with credentials once registered', async () => {
     const client = fakeClient({ rpcImpl: async () => ({ data: 'New', error: null }) });
+    new PlayerIdentity(storage).markRegistered();
     const lb = makeLb(client);
     await lb.rename('Old', 'New');
     expect(client.rpc).toHaveBeenCalledWith(

@@ -8,7 +8,7 @@
 Jump from platform to platform, grab **DLI coins**, dodge glitch bugs and climb the leaderboard.
 
 [![CI](https://github.com/levsage/DiliJump/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/levsage/DiliJump/actions/workflows/ci.yml)
-![version](https://img.shields.io/badge/version-1.2.0-1f5fc9)
+![version](https://img.shields.io/badge/version-1.2.1-1f5fc9)
 ![license](https://img.shields.io/badge/license-MIT-green)
 
 <img src="docs/images/screenshot-menu.jpg" width="260" alt="Main menu" />
