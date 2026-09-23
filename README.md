@@ -11,6 +11,8 @@ Jump from platform to platform, grab **DLI coins**, dodge glitch bugs and climb 
 ![version](https://img.shields.io/badge/version-1.2.1-1f5fc9)
 ![license](https://img.shields.io/badge/license-MIT-green)
 
+**▶ Play now: [dili-jump.vercel.app](https://dili-jump.vercel.app)** · mirror: [levsage.github.io/DiliJump](https://levsage.github.io/DiliJump/)
+
 <img src="docs/images/screenshot-menu.jpg" width="260" alt="Main menu" />
 &nbsp;
 <img src="docs/images/screenshot-gameplay.jpg" width="260" alt="Gameplay" />
