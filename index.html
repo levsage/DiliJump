@@ -1,0 +1,180 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
+    />
+    <meta
+      name="description"
+      content="DiliJump — jump, collect DLI coins and climb the leaderboard with the Dlicom mascot."
+    />
+    <meta name="theme-color" content="#1f5fc9" />
+    <title>DiliJump</title>
+    <link rel="icon" type="image/svg+xml" href="/assets/brand/favicon.svg" />
+    <link rel="apple-touch-icon" href="/assets/brand/apple-touch-icon.png" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+  </head>
+  <body>
+    <main id="app" class="app" aria-label="DiliJump game">
+      <canvas id="game" class="game-canvas" aria-hidden="true"></canvas>
+
+      <!-- In-game HUD -->
+      <header id="hud" class="hud" hidden>
+        <div class="hud__row">
+          <div class="namebar" title="Player">
+            <img class="namebar__avatar" src="/assets/sprites/idle.png" alt="" />
+            <span class="namebar__name" data-bind="player-name">Player</span>
+          </div>
+          <div class="hud__actions">
+            <button class="icon-btn" data-action="mute" aria-label="Toggle sound">🔊</button>
+            <button class="icon-btn" data-action="pause" aria-label="Pause">❚❚</button>
+          </div>
+        </div>
+        <div class="hud__row">
+          <div class="scorebar" aria-live="polite">
+            <span class="scorebar__label">SCORE</span>
+            <span class="scorebar__value" data-bind="score">0</span>
+            <span class="scorebar__best">BEST <b data-bind="best">0</b></span>
+          </div>
+          <div class="coinbar" title="DLI coins">
+            <img class="coinbar__icon" src="/assets/brand/dli-coin.svg" alt="DLI" />
+            <span class="coinbar__value" data-bind="run-coins">0</span>
+            <span class="coinbar__unit">DLI</span>
+          </div>
+        </div>
+      </header>
+
+      <!-- Touch shoot button (mobile) -->
+      <button id="shoot-btn" class="shoot-btn" aria-label="Shoot" hidden>⚡</button>
+
+      <!-- Loading -->
+      <section id="screen-loading" class="screen screen--loading">
+        <img
+          class="brand-logo brand-logo--pulse"
+          src="/assets/brand/dlicom-logo.svg"
+          alt="Dlicom"
+        />
+        <div class="progress"><div class="progress__bar" data-bind="progress"></div></div>
+      </section>
+
+      <!-- Main menu -->
+      <section id="screen-menu" class="screen screen--menu" hidden>
+        <div class="menu__brand">
+          <img class="brand-logo" src="/assets/brand/dlicom-logo.svg" alt="Dlicom" />
+          <span>DLICOM PRESENTS</span>
+        </div>
+        <h1 class="title">Dili<span>Jump</span></h1>
+
+        <form class="namebox" data-form="name" autocomplete="off">
+          <label for="name-input" class="namebox__label">Player name</label>
+          <div class="namebox__row">
+            <input
+              id="name-input"
+              class="namebox__input"
+              name="name"
+              maxlength="16"
+              placeholder="Enter your name"
+              spellcheck="false"
+            />
+            <button class="namebox__save" type="submit" aria-label="Save name">✓</button>
+          </div>
+          <p class="namebox__error" data-bind="name-error" role="alert"></p>
+        </form>
+
+        <div class="stats">
+          <div class="stat">
+            <span class="stat__label">Best</span>
+            <span class="stat__value" data-bind="menu-best">0</span>
+          </div>
+          <div class="stat stat--coin">
+            <span class="stat__label">DLI Wallet</span>
+            <span class="stat__value"
+              ><img src="/assets/brand/dli-coin.svg" alt="" /><b data-bind="wallet">0</b></span
+            >
+          </div>
+          <div class="stat">
+            <span class="stat__label">Games</span>
+            <span class="stat__value" data-bind="games">0</span>
+          </div>
+        </div>
+
+        <button class="btn btn--primary btn--big" data-action="play">▶ PLAY</button>
+        <button class="btn btn--ghost" data-action="leaderboard">🏆 Leaderboard</button>
+
+        <p class="hint">
+          <span class="hint--desktop">← → / A D to move · Space to shoot · P to pause</span>
+          <span class="hint--touch">Hold left / right side to move · ⚡ to shoot</span>
+        </p>
+        <footer class="version">v<span data-bind="version"></span></footer>
+      </section>
+
+      <!-- Pause -->
+      <section id="screen-pause" class="screen screen--overlay" hidden>
+        <div class="panel">
+          <h2 class="panel__title">Paused</h2>
+          <button class="btn btn--primary" data-action="resume">▶ Resume</button>
+          <button class="btn btn--ghost" data-action="restart">↻ Restart</button>
+          <button class="btn btn--ghost" data-action="menu">⌂ Main menu</button>
+        </div>
+      </section>
+
+      <!-- Game over / Scoreboard -->
+      <section id="screen-gameover" class="screen screen--overlay" hidden>
+        <div class="panel scoreboard">
+          <img
+            class="scoreboard__hero"
+            data-bind="result-hero"
+            src="/assets/sprites/hurt.png"
+            alt=""
+          />
+          <h2 class="panel__title" data-bind="result-title">Game Over</h2>
+          <p class="scoreboard__badge" data-bind="result-badge" hidden></p>
+          <dl class="scoreboard__grid">
+            <div>
+              <dt>Score</dt>
+              <dd data-bind="result-score">0</dd>
+            </div>
+            <div>
+              <dt>Best</dt>
+              <dd data-bind="result-best">0</dd>
+            </div>
+            <div>
+              <dt>Height</dt>
+              <dd><span data-bind="result-height">0</span> m</dd>
+            </div>
+            <div class="coin">
+              <dt>DLI earned</dt>
+              <dd>+<span data-bind="result-coins">0</span></dd>
+            </div>
+          </dl>
+          <p class="scoreboard__wallet">
+            <img src="/assets/brand/dli-coin.svg" alt="" /> Wallet:
+            <b data-bind="result-wallet">0</b> DLI
+          </p>
+          <button class="btn btn--primary" data-action="restart">↻ Play again</button>
+          <div class="btn-row">
+            <button class="btn btn--ghost" data-action="leaderboard">🏆 Leaderboard</button>
+            <button class="btn btn--ghost" data-action="menu">⌂ Menu</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- Leaderboard -->
+      <section id="screen-leaderboard" class="screen screen--overlay" hidden>
+        <div class="panel leaderboard">
+          <h2 class="panel__title">🏆 Leaderboard</h2>
+          <ol class="leaderboard__list" data-bind="leaderboard"></ol>
+          <p class="leaderboard__empty" data-bind="leaderboard-empty">
+            No scores yet — be the first!
+          </p>
+          <button class="btn btn--primary" data-action="close-leaderboard">Back</button>
+        </div>
+      </section>
+
+      <noscript>DiliJump needs JavaScript enabled to run.</noscript>
+    </main>
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>
