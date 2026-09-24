@@ -7,7 +7,9 @@ export class Spring {
     this.offsetX = offsetX;
     this.w = SPRING.WIDTH;
     this.h = SPRING.HEIGHT;
-    this.compressed = 0;
+    /** Seconds since triggered (-1 = not yet), drives the boing animation. */
+    this.t = -1;
+    this.idle = Math.random() * 10;
     this.dead = false;
   }
 
@@ -20,11 +22,12 @@ export class Spring {
   }
 
   trigger() {
-    this.compressed = 1;
+    this.t = 0;
   }
 
   update(dt) {
-    this.compressed = Math.max(0, this.compressed - dt * 3);
+    this.idle += dt;
+    if (this.t >= 0) this.t += dt;
     if (this.platform.dead || this.platform.broken) this.dead = true;
   }
 }

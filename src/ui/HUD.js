@@ -39,10 +39,21 @@ export class HUD {
     if (n > 0) pulse(this.coinEl);
   }
 
+  /** Updates every sound toggle (HUD + menu). */
   setMuted(muted) {
-    const btn = $('[data-action="mute"]', this.root);
-    btn.textContent = muted ? '🔇' : '🔊';
-    btn.setAttribute('aria-pressed', String(muted));
+    for (const btn of document.querySelectorAll('[data-action="mute"]')) {
+      btn.textContent = muted ? '🔇' : '🔊';
+      btn.setAttribute('aria-pressed', String(muted));
+    }
+  }
+
+  /** Updates every music toggle (HUD + menu). */
+  setMusic(on) {
+    for (const btn of document.querySelectorAll('[data-action="music"]')) {
+      btn.classList.toggle('is-off', !on);
+      btn.setAttribute('aria-pressed', String(!on));
+      btn.title = on ? 'Music on' : 'Music off';
+    }
   }
 
   show(visible) {

@@ -27,3 +27,8 @@ Thumbs.db
 # Python tooling
 __pycache__/
 *.pyc
+
+# Playwright
+test-results/
+playwright-report/
+blob-report/

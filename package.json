@@ -1,6 +1,6 @@
 {
   "name": "dilijump",
-  "version": "1.2.1",
+  "version": "2.0.0",
   "description": "DiliJump \u2014 a Doodle Jump\u2013style 2D web game starring the Dlicom mascot. Jump, collect DLI coins, climb the leaderboard.",
   "private": true,
   "type": "module",
@@ -38,11 +38,15 @@
     "format:check": "prettier --check .",
     "check": "npm run lint && npm run format:check && npm run test && npm run build",
     "sprites": "python3 tools/process_sprites.py art/poses public/assets/sprites 320",
+    "sprites:sheets": "python3 tools/process_sheets.py",
     "test:db": "bash supabase/tests/run-local.sh",
-    "check:supabase": "node --env-file-if-exists=.env.local tools/supabase-healthcheck.mjs"
+    "check:supabase": "node --env-file-if-exists=.env.local tools/supabase-healthcheck.mjs",
+    "test:e2e": "playwright test",
+    "og-image": "node tools/og/render.mjs"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.5",
+    "@playwright/test": "^1.63.0",
     "eslint": "^9.39.5",
     "eslint-config-prettier": "^10.1.8",
     "globals": "^17.12.0",

@@ -1,5 +1,7 @@
 import { defineConfig, loadEnv } from 'vite';
 import { readFileSync } from 'node:fs';
+import { cspMeta } from './tools/vite/csp.js';
+import { serviceWorker } from './tools/vite/serviceWorker.js';
 
 const pkg = JSON.parse(readFileSync(new URL('./package.json', import.meta.url), 'utf8'));
 
@@ -24,7 +26,7 @@ function warnMissingSupabaseEnv() {
 }
 
 export default defineConfig({
-  plugins: [warnMissingSupabaseEnv()],
+  plugins: [warnMissingSupabaseEnv(), cspMeta(), serviceWorker()],
   // Relative base: the same build works on Vercel (/), GitHub Pages (/DiliJump/) and any static host.
   base: './',
   define: {
@@ -44,7 +46,8 @@ export default defineConfig({
     outDir: 'dist',
     assetsDir: 'static', // keep bundled JS/CSS separate from public/assets
     target: 'es2020',
-    sourcemap: true,
+    // no public source maps in production (the repo is the source of truth)
+    sourcemap: false,
     rollupOptions: {
       output: {
         // supabase-js is lazy-loaded; give its chunk a readable name.

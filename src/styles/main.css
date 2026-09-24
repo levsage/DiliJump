@@ -97,7 +97,7 @@ input {
 /* All UI sizes scale with the game frame via container query units */
 .hud,
 .screen,
-.shoot-btn {
+.controls {
   font-size: clamp(11px, 3.4cqw, 18px);
 }
 
@@ -242,21 +242,118 @@ input {
   background: var(--glass-strong);
 }
 
-.shoot-btn {
-  position: absolute;
-  right: 4cqw;
-  bottom: 4cqw;
-  width: 17cqw;
-  height: 17cqw;
-  border-radius: 50%;
-  border: 3px solid rgba(255, 255, 255, 0.8);
-  background: radial-gradient(circle at 35% 30%, #aef9ff, #1fb6d6);
-  font-size: 2em;
-  box-shadow: var(--shadow);
-  touch-action: none;
+/* music / sound toggles: "off" state */
+.icon-btn.is-off {
+  position: relative;
+  opacity: 0.55;
 }
 
-.shoot-btn:active {
+.icon-btn.is-off::after {
+  content: '';
+  position: absolute;
+  left: 18%;
+  right: 18%;
+  top: 50%;
+  height: 3px;
+  border-radius: 2px;
+  background: var(--c-danger);
+  transform: rotate(-40deg);
+}
+
+.menu__audio {
+  position: absolute;
+  top: 3cqw;
+  right: 3cqw;
+  display: flex;
+  gap: 2cqw;
+}
+
+/* ---------- Update toast ---------- */
+.toast {
+  position: absolute;
+  z-index: 30;
+  left: 50%;
+  bottom: 22cqw; /* clear of the menu footer hint */
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 3cqw;
+  padding: 2cqw 2cqw 2cqw 4cqw;
+  border-radius: 999px;
+  background: var(--glass-strong);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow);
+  font-size: clamp(11px, 3.4cqw, 18px);
+  white-space: nowrap;
+}
+
+.toast__btn {
+  border: 0;
+  border-radius: 999px;
+  padding: 1.4cqw 3.5cqw;
+  background: var(--c-coin);
+  color: var(--c-ink);
+  font-weight: 800;
+  cursor: pointer;
+}
+
+/* ---------- On-screen controls ---------- */
+.controls {
+  position: absolute;
+  inset: auto 0 0 0;
+  padding: 0 3.5cqw calc(3.5cqw + env(safe-area-inset-bottom, 0px));
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  pointer-events: none; /* gaps between buttons fall through to the canvas */
+}
+
+.ctrl {
+  pointer-events: auto;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border-radius: 50%;
+  border: 3px solid rgba(255, 255, 255, 0.7);
+  box-shadow: var(--shadow);
+  touch-action: none;
+  cursor: pointer;
+  transition:
+    transform 0.08s,
+    background-color 0.08s;
+}
+
+.ctrl--move {
+  width: 21cqw;
+  height: 21cqw;
+  background: rgba(11, 30, 74, 0.45);
+  backdrop-filter: blur(4px);
+}
+
+.ctrl--move svg {
+  width: 52%;
+  fill: none;
+  stroke: var(--c-white);
+  stroke-width: 3.2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.ctrl--move.is-pressed {
+  transform: scale(0.92);
+  background: rgba(95, 176, 245, 0.75);
+  border-color: var(--c-white);
+}
+
+.ctrl--shoot {
+  width: 16cqw;
+  height: 16cqw;
+  margin-bottom: 2.5cqw;
+  background: radial-gradient(circle at 35% 30%, #aef9ff, #1fb6d6);
+  font-size: 7cqw;
+}
+
+.ctrl--shoot:active {
   transform: scale(0.92);
 }
 

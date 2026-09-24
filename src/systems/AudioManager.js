@@ -1,30 +1,81 @@
+import { MusicPlayer } from './music/MusicPlayer.js';
+
+const MASTER_VOLUME = 0.35;
+const MUSIC_VOLUME = 0.5;
+
 /**
- * Procedural sound effects via the Web Audio API — no audio files needed,
- * keeping the bundle tiny. The context is lazily created on first user
- * gesture to satisfy browser autoplay policies.
+ * Procedural sound effects + background music via the Web Audio API — no
+ * audio files needed, keeping the download tiny. The context is lazily
+ * created on the first user gesture to satisfy browser autoplay policies.
+ *
+ *   master (mute) ─┬─ sfx
+ *                  └─ music (on/off) ← MusicPlayer
  */
 export class AudioManager {
-  constructor({ muted = false } = {}) {
+  constructor({ muted = false, music = true } = {}) {
     this.muted = muted;
+    this.musicEnabled = music;
+    this.musicMode = { level: 0, volume: 1 };
     this.ctx = null;
     this.master = null;
+    this.music = null;
+  }
+
+  get unlocked() {
+    return Boolean(this.ctx);
   }
 
   unlock() {
     if (this.ctx) {
-      if (this.ctx.state === 'suspended') this.ctx.resume();
+      if (this.ctx.state === 'suspended' && !document.hidden) this.ctx.resume();
       return;
     }
     const Ctx = window.AudioContext || window.webkitAudioContext;
     if (!Ctx) return;
     this.ctx = new Ctx();
     this.master = this.ctx.createGain();
-    this.master.gain.value = 0.35;
+    this.master.gain.value = this.muted ? 0 : MASTER_VOLUME;
     this.master.connect(this.ctx.destination);
+    this.sfx = this.ctx.createGain();
+    this.sfx.connect(this.master);
+    this.musicBus = this.ctx.createGain();
+    this.musicBus.gain.value = MUSIC_VOLUME;
+    this.musicBus.connect(this.master);
+    this.music = new MusicPlayer(this.ctx, this.musicBus);
+    this.applyMusic();
   }
 
   setMuted(m) {
     this.muted = m;
+    if (this.master)
+      this.master.gain.setTargetAtTime(m ? 0 : MASTER_VOLUME, this.ctx.currentTime, 0.05);
+  }
+
+  setMusicEnabled(on) {
+    this.musicEnabled = on;
+    this.applyMusic();
+  }
+
+  /** Desired soundtrack state: intensity level (0 menu, 1 play, 2 high) and volume. */
+  setMusicMode(level, volume = 1) {
+    this.musicMode = { level, volume };
+    this.applyMusic();
+  }
+
+  applyMusic() {
+    if (!this.music) return;
+    const { level, volume } = this.musicMode;
+    if (this.musicEnabled && volume > 0) this.music.play(level, volume);
+    else this.music.stop();
+  }
+
+  /** Pause everything while the tab is hidden. */
+  suspend() {
+    if (this.ctx?.state === 'running') this.ctx.suspend();
+  }
+
+  resume() {
+    if (this.ctx?.state === 'suspended') this.ctx.resume();
   }
 
   tone({ freq = 440, to = freq, dur = 0.12, type = 'sine', vol = 0.6, delay = 0 }) {
@@ -37,7 +88,7 @@ export class AudioManager {
     osc.frequency.exponentialRampToValueAtTime(Math.max(1, to), t0 + dur);
     gain.gain.setValueAtTime(vol, t0);
     gain.gain.exponentialRampToValueAtTime(0.001, t0 + dur);
-    osc.connect(gain).connect(this.master);
+    osc.connect(gain).connect(this.sfx);
     osc.start(t0);
     osc.stop(t0 + dur + 0.02);
   }

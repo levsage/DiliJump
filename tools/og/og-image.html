@@ -1,0 +1,207 @@
+<!doctype html>
+<!--
+  Social preview card (1200×630) for WhatsApp / Facebook / X / Discord links.
+  Rendered to public/og-image.jpg by `npm run og-image` (tools/og/render.mjs).
+  Uses the real game assets from public/.
+-->
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <style>
+      * {
+        box-sizing: border-box;
+        margin: 0;
+      }
+      body {
+        width: 1200px;
+        height: 630px;
+        overflow: hidden;
+        font-family: 'Baloo 2', 'Nunito', 'DejaVu Sans', system-ui, sans-serif;
+      }
+      .card {
+        position: relative;
+        width: 1200px;
+        height: 630px;
+        overflow: hidden;
+        background: linear-gradient(180deg, #0f2d73 0%, #1f5fc9 45%, #6db8f2 100%);
+      }
+      .glow {
+        position: absolute;
+        right: 120px;
+        top: 40px;
+        width: 520px;
+        height: 520px;
+        border-radius: 50%;
+        background: radial-gradient(circle, rgba(255, 255, 255, 0.35), rgba(255, 255, 255, 0) 65%);
+      }
+      .cloud {
+        position: absolute;
+        background: rgba(255, 255, 255, 0.55);
+        border-radius: 999px;
+      }
+      .cloud::before,
+      .cloud::after {
+        content: '';
+        position: absolute;
+        background: inherit;
+        border-radius: 50%;
+      }
+      .cloud::before {
+        width: 55%;
+        height: 170%;
+        left: 12%;
+        bottom: 20%;
+      }
+      .cloud::after {
+        width: 40%;
+        height: 130%;
+        right: 12%;
+        bottom: 25%;
+      }
+      .platform {
+        position: absolute;
+        height: 26px;
+        border-radius: 13px;
+        border: 4px solid #0b1433;
+        background: linear-gradient(#7ee08f, #2e9c4a);
+        box-shadow: inset 0 5px 0 rgba(255, 255, 255, 0.35);
+      }
+      .coin {
+        position: absolute;
+        width: 58px;
+        height: 58px;
+        filter: drop-shadow(0 0 12px rgba(255, 210, 63, 0.7));
+      }
+      .left {
+        position: absolute;
+        left: 70px;
+        top: 70px;
+        width: 700px;
+        color: #fff;
+      }
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        font-size: 26px;
+        font-weight: 800;
+        letter-spacing: 6px;
+        opacity: 0.95;
+      }
+      .brand img {
+        width: 64px;
+      }
+      h1 {
+        margin-top: 18px;
+        font-size: 138px;
+        line-height: 0.95;
+        font-weight: 900;
+        letter-spacing: -3px;
+        text-shadow:
+          0 8px 0 #1a3a99,
+          0 16px 30px rgba(0, 0, 0, 0.35);
+      }
+      h1 span {
+        color: #ffd23f;
+      }
+      .tag {
+        margin-top: 26px;
+        font-size: 33px;
+        font-weight: 700;
+        line-height: 1.25;
+        text-shadow: 0 3px 10px rgba(0, 0, 0, 0.35);
+      }
+      .pills {
+        margin-top: 30px;
+        display: flex;
+        gap: 14px;
+        flex-wrap: wrap;
+      }
+      .pill {
+        padding: 10px 22px;
+        border-radius: 999px;
+        background: rgba(11, 30, 74, 0.55);
+        border: 2px solid rgba(255, 255, 255, 0.35);
+        font-size: 22px;
+        font-weight: 800;
+      }
+      .pill b {
+        color: #ffd23f;
+      }
+      .sprite {
+        position: absolute;
+        background-repeat: no-repeat;
+        filter: drop-shadow(0 14px 18px rgba(0, 0, 0, 0.3));
+      }
+    </style>
+  </head>
+  <body>
+    <div class="card">
+      <div class="glow"></div>
+      <div class="cloud" style="left: 700px; top: 470px; width: 260px; height: 60px"></div>
+      <div
+        class="cloud"
+        style="left: 1010px; top: 120px; width: 170px; height: 42px; opacity: 0.8"
+      ></div>
+      <div
+        class="cloud"
+        style="left: 560px; top: 90px; width: 150px; height: 36px; opacity: 0.6"
+      ></div>
+
+      <div class="platform" style="left: 820px; top: 560px; width: 190px"></div>
+      <div class="platform" style="left: 1030px; top: 368px; width: 150px"></div>
+      <div class="platform" style="left: 690px; top: 330px; width: 120px"></div>
+      <img
+        class="coin"
+        src="../../public/assets/brand/dli-coin.svg"
+        style="left: 720px; top: 250px"
+      />
+      <img
+        class="coin"
+        src="../../public/assets/brand/dli-coin.svg"
+        style="left: 1115px; top: 150px; transform: scale(0.8)"
+      />
+      <img
+        class="coin"
+        src="../../public/assets/brand/dli-coin.svg"
+        style="left: 1110px; top: 40px; transform: scale(0.7)"
+      />
+
+      <!-- spring super-jump (blast-off frame) + a jump frame, cropped from the real atlases -->
+      <div id="hero" class="sprite"></div>
+      <div id="side" class="sprite"></div>
+
+      <div class="left">
+        <div class="brand">
+          <img src="../../public/assets/brand/dlicom-logo.svg" />DLICOM PRESENTS
+        </div>
+        <h1>Dili<span>Jump</span></h1>
+        <p class="tag">Jump, grab DLI coins and climb<br />the global leaderboard!</p>
+        <div class="pills">
+          <span class="pill">🏆 <b>Live</b> leaderboard</span>
+          <span class="pill">🎵 Music</span>
+          <span class="pill">📱 Play free · no login</span>
+        </div>
+      </div>
+    </div>
+    <script type="module">
+      const meta = await (await fetch('../../src/config/spriteSheets.json')).json();
+      function place(el, sheet, index, height, left, bottom, flip = false) {
+        const m = meta[sheet];
+        const [cw, ch] = m.cell;
+        const s = height / m.refHeight; // same scale rule as the game renderer
+        el.style.width = `${cw * s}px`;
+        el.style.height = `${ch * s}px`;
+        el.style.left = `${left}px`;
+        el.style.top = `${630 - bottom - ch * s}px`;
+        el.style.backgroundImage = `url(../../public/assets/sprites/${m.file})`;
+        el.style.backgroundSize = `${cw * m.cols * s}px auto`;
+        el.style.backgroundPosition = `${-(index % m.cols) * cw * s}px ${-Math.floor(index / m.cols) * ch * s}px`;
+        if (flip) el.style.transform = 'scaleX(-1)';
+      }
+      place(document.getElementById('hero'), 'spring', 1, 400, 845, 90);
+      place(document.getElementById('side'), 'jump', 6, 170, 1045, 262, true);
+      document.body.dataset.ready = '1';
+    </script>
+  </body>
+</html>

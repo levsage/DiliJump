@@ -46,6 +46,12 @@ loading ──► menu ──► playing ⇄ paused
 keeps jumps deterministic on any refresh rate and prevents tunnelling through
 platforms on slow frames. Rendering runs once per animation frame.
 
+The next frame is scheduled _before_ a frame runs, and each frame is wrapped in
+`try/catch`: one bad frame is logged once and skipped. After
+`MAX_FRAME_ERRORS` (30) failing frames in a row the loop stops and emits
+`app:fatal`, and the UI shows a "Reload" screen. `AssetLoader` retries each image
+twice before failing the boot.
+
 ## Coordinates
 
 - Logical resolution is **480 × 800**. The canvas is scaled to fit (up to DPR 2).
@@ -54,22 +60,40 @@ platforms on slow frames. Rendering runs once per animation frame.
 
 ## Player animation
 
-Pose sprites (see `public/assets/sprites/sprites.json`) share one canvas size
-and a bottom-centre anchor, so swapping poses never makes the character jump
-around. Pose selection is a small state machine in `Player.updateAnimation()`:
+Normal movement plays **generated animation sheets**; single generated poses
+are short overrides. Sheets are atlases made by `tools/process_sheets.py`
+(`public/assets/sprites/*-sheet.webp` + `src/config/spriteSheets.json`).
 
-| Condition           | Pose     |
-| ------------------- | -------- |
-| Just landed (0.1 s) | `crouch` |
-| Shooting (0.28 s)   | `shoot`  |
-| Rising              | `jump`   |
-| Falling             | `fall`   |
-| Near apex           | `idle`   |
-| Dead                | `hurt`   |
-| Menu / new record   | `cheer`  |
+Frames are chosen from the **physics state** (vertical speed + time since the
+last bounce) in `src/entities/animation.js`, so the animation always matches
+the real jump arc:
 
-On top of the key poses there is procedural motion: squash on landing, stretch
-while rising, lean into horizontal movement and a somersault on springs.
+| Sheet        | Frames | Driven by                                                               |
+| ------------ | ------ | ----------------------------------------------------------------------- |
+| `jump` (12)  | 0-3    | Time since bounce: landing squat → push-off (35 ms each)                |
+|              | 4-7    | Upward speed: rising → apex hang                                        |
+|              | 8-11   | Downward speed: start of fall → legs out, ready to land                 |
+| `spring` (8) | 0-1    | Charge, blast-off                                                       |
+|              | 2-4    | Superhero flight, cape flutter loop (14 fps) + afterimages and sparkles |
+|              | 5-6    | Somersault tuck with exactly one 360° flip                              |
+|              | 7      | Unfold at the top, then hands over to the jump sheet's falling frames   |
+| Single poses | —      | `shoot` (0.28 s), `cheer` (menu), `hurt` (dead)                         |
+
+All frames are bottom-centre anchored (horizontal anchor = the body's mass
+centre, so poses with an arm out don't jitter). Light procedural squash on
+landing, stretch while rising and lean into movement are layered on top.
+
+Springs have their own elastic animation (`springStretch()`): squash, overshoot
+above rest height, damped wobble, plus a shock ring.
+
+## Audio
+
+`AudioManager` owns one Web Audio graph: `master (mute) → sfx | music`.
+`MusicPlayer` (`src/systems/music/`) synthesises the original track in
+`song.js` with a look-ahead scheduler. The game sets an intensity level:
+0 menu (bass, arpeggio, hats), 1 playing (+ drums, lead), 2 above 2 500 points
+(+ 16th hats, lead doubling). It ducks when paused or on game over, and the
+audio context is suspended while the tab is hidden.
 
 ## Persistence
 
@@ -82,7 +106,7 @@ All keys are namespaced with `dilijump:v1:` in `localStorage`:
 | `leaderboard`         | Offline board, one best entry per name `[{ id, name, score, coins, height, date }]`                            |
 | `leaderboard:pending` | Best run that failed to reach Supabase (retried)                                                               |
 | `identity`            | `{ playerId, secret, createdAt }`, the no-login leaderboard identity (the DB stores only a hash of the secret) |
-| `settings`            | `{ muted }`                                                                                                    |
+| `settings`            | `{ muted, music }`                                                                                             |
 
 If storage is unavailable (private mode), an in-memory backend is used.
 
@@ -103,3 +127,29 @@ implement the same async interface:
 | `subscribe(onChange, onStatus)`                      | Unsubscribe function (realtime)                              |
 
 See [SUPABASE.md](SUPABASE.md) for the database side.
+
+## Production build
+
+`npm run build` produces a hardened static site in `dist/` that works on any
+host (relative `base: './'`: Vercel at `/`, GitHub Pages at `/DiliJump/`).
+
+| Piece                   | Where                                        | What it does                                                                                                                                                                                                                                                             |
+| ----------------------- | -------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Content Security Policy | `tools/vite/csp.js`                          | One policy, sent as a header on Vercel (`vercel.json`) **and** injected as a `<meta>` tag into every build (for Pages). Only `self` and `*.supabase.co` (REST + realtime) are allowed. `tests/production.test.js` fails if `vercel.json` drifts.                         |
+| Service worker          | `tools/vite/serviceWorker.js` → `dist/sw.js` | Generated at build time. Precaches the page, hashed bundles and `public/` (except `og-image`, `404`, `robots`). Navigations are network-first (3.5 s timeout → cached page); same-origin assets cache-first; **cross-origin requests (Supabase) are never intercepted**. |
+| SW registration         | `src/services/serviceWorker.js`              | Production only. Checks for a new deploy when the tab becomes visible; when a new worker takes over, the menu shows "New version ready · Reload" (never mid-run).                                                                                                        |
+| Caching headers         | `vercel.json`                                | `static/*` immutable for a year; `assets/*` a week; `sw.js` and the manifest `no-cache`.                                                                                                                                                                                 |
+| Social card             | `public/og-image.jpg` (`npm run og-image`)   | 1200×630 card rendered from `tools/og/og-image.html` with the real game assets.                                                                                                                                                                                          |
+| No source maps          | `vite.config.js`                             | `build.sourcemap: false`.                                                                                                                                                                                                                                                |
+
+The cache name contains a hash of everything precached, so each deploy gets a
+fresh cache and old ones are deleted when the new worker activates.
+
+### Tests
+
+- `npm test` — Vitest unit tests (`tests/*.test.js`).
+- `npm run test:e2e` — Playwright smoke tests (`tests/e2e/*.spec.js`) against
+  `vite preview` of the production build, on a mobile and a desktop profile:
+  clean console, play/controls/pause, leaderboard, service worker + offline
+  reload, CSP and 404. They run in CI **without** Supabase env on purpose (the
+  offline board), so CI never writes to the live database.

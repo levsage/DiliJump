@@ -1,16 +1,17 @@
-import { PHYSICS, PLAYER } from '../config/constants.js';
+import { ANIMATION, PHYSICS, PLAYER } from '../config/constants.js';
 import { clamp, damp } from '../utils/math.js';
+import { jumpFrame, springFrame } from './animation.js';
 
 /**
- * Pose state machine for the mascot. Each pose maps 1:1 to a generated
- * sprite (see public/assets/sprites). Procedural squash/stretch, tilt and
- * facing are layered on top for smooth animation between key poses.
+ * Mascot state + animation.
+ *
+ * Normal movement plays generated animation sheets (12-frame jump, 8-frame
+ * spring super-jump, see ./animation.js). Single generated poses are used as
+ * short overrides (shoot, cheer, hurt). Procedural squash/stretch, lean and
+ * facing are layered on top.
  */
 export const POSE = Object.freeze({
   IDLE: 'idle',
-  JUMP: 'jump',
-  FALL: 'fall',
-  CROUCH: 'crouch',
   SHOOT: 'shoot',
   HURT: 'hurt',
   CHEER: 'cheer',
@@ -39,6 +40,12 @@ export class Player {
     this.spin = 0;
     this.time = 0;
     this.springBoost = false;
+    this.sinceBounce = 1;
+    /** Current sheet frame `{ sheet, index }`, or null while a pose override shows. */
+    this.frame = { sheet: 'jump', index: 8 };
+    /** Afterimages during the spring super-jump: `[{ x, y, frame, rotation }]`. */
+    this.trail = [];
+    this.trailTimer = 0;
   }
 
   get hitbox() {
@@ -67,10 +74,13 @@ export class Player {
   bounce(velocity, { spring = false } = {}) {
     this.vy = velocity;
     this.springBoost = spring;
-    this.scaleX = 1.25; // squash on contact, springs back via damp()
-    this.scaleY = 0.75;
-    this.setPose(POSE.CROUCH, PLAYER.LANDING_POSE_TIME);
-    if (spring) this.spin = 0;
+    this.sinceBounce = 0;
+    // The landing frames show the squat; a light procedural squash adds weight.
+    this.scaleX = spring ? 1.18 : 1.1;
+    this.scaleY = spring ? 0.82 : 0.9;
+    this.spin = 0;
+    this.trail.length = 0;
+    if (this.pose !== POSE.SHOOT) this.poseTimer = 0;
   }
 
   canShoot() {
@@ -121,21 +131,22 @@ export class Player {
   }
 
   updateAnimation(dt) {
+    this.sinceBounce += dt;
+
     if (this.poseTimer > 0) {
       this.poseTimer -= dt;
+      this.frame = null; // pose override (shoot / cheer)
     } else if (!this.alive) {
       this.pose = POSE.HURT;
-    } else if (this.vy < -80) {
-      this.pose = POSE.JUMP;
-    } else if (this.vy > 120) {
-      this.pose = POSE.FALL;
+      this.frame = null;
     } else {
-      this.pose = POSE.IDLE; // hang-time at the apex
+      this.pose = POSE.IDLE;
+      this.frame = this.pickFrame();
     }
 
-    // Stretch while rising fast, relax to 1 otherwise.
+    // Gentle stretch while rising fast, relax to 1 otherwise.
     const speed = Math.abs(this.vy) / PHYSICS.SPRING_VELOCITY;
-    const targetY = this.vy < 0 ? 1 + Math.min(0.12, -speed * 0.12) : 1;
+    const targetY = this.vy < 0 ? 1 + Math.min(0.06, -speed * 0.06) : 1;
     const targetX = 2 - targetY;
     this.scaleX = damp(this.scaleX, targetX, 14, dt);
     this.scaleY = damp(this.scaleY, targetY, 14, dt);
@@ -143,13 +154,42 @@ export class Player {
     // Lean into horizontal movement.
     const targetTilt = this.alive ? (this.vx / PHYSICS.MAX_MOVE_SPEED) * 0.18 : this.tilt;
     this.tilt = damp(this.tilt, targetTilt, 10, dt);
-
-    // Spring super-jump: full somersault while rising.
-    if (this.springBoost && this.vy < 0) this.spin += dt * 12;
-    else {
-      this.springBoost = false;
-      this.spin = damp(this.spin, Math.round(this.spin / (Math.PI * 2)) * Math.PI * 2, 12, dt);
-    }
     if (!this.alive) this.tilt += dt * 5;
+
+    this.updateTrail(dt);
+  }
+
+  /** Spring super-jump sheet first, then the regular 12-frame jump. */
+  pickFrame() {
+    if (this.springBoost) {
+      const s = springFrame(this.vy, this.sinceBounce);
+      if (s) {
+        this.spin = s.flip * this.facing;
+        return { sheet: 'spring', index: s.frame };
+      }
+      this.springBoost = false;
+    }
+    this.spin = 0;
+    return { sheet: 'jump', index: jumpFrame(this.vy, this.sinceBounce) };
+  }
+
+  /** Record afterimages while blasting upward off a spring. */
+  updateTrail(dt) {
+    const S = ANIMATION.SPRING;
+    const flying = this.springBoost && this.vy < S.TUCK_SPEED * 0.6 && this.frame;
+    this.trailTimer -= dt;
+    if (flying && this.trailTimer <= 0) {
+      this.trailTimer = S.TRAIL_INTERVAL;
+      this.trail.unshift({
+        x: this.x,
+        y: this.y,
+        frame: this.frame,
+        rotation: this.tilt + this.spin,
+      });
+      if (this.trail.length > S.TRAIL_LENGTH) this.trail.pop();
+    } else if (!flying && this.trail.length && this.trailTimer <= 0) {
+      this.trailTimer = S.TRAIL_INTERVAL;
+      this.trail.pop(); // fade the trail out
+    }
   }
 }

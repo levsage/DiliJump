@@ -21,6 +21,9 @@ export class UIManager {
       gameover: $('#screen-gameover'),
       leaderboard: $('#screen-leaderboard'),
     };
+    this.controls = $('#controls');
+    this.updateToast = $('#update-toast');
+    this.updateReady = false;
     this.shootBtn = $('#shoot-btn');
 
     this.hud = new HUD({ events, profile });
@@ -36,13 +39,33 @@ export class UIManager {
     this.board = new LeaderboardScreen({ leaderboard, profile });
 
     this.hud.setMuted(settings.muted);
+    this.hud.setMusic(settings.music);
+    this.unlockAudioOnFirstGesture();
     this.bindActions();
     this.bindShootButton();
+    game.input.bindButtons(this.controls);
     events.on(EVENTS.STATE_CHANGE, ({ state }) => this.onState(state));
     events.on(EVENTS.RUN_SUBMITTED, (result) => this.gameOver.populate(result));
+    events.on(EVENTS.UPDATE_READY, () => {
+      this.updateReady = true;
+      this.onState(this.game.state);
+    });
+    events.on(EVENTS.FATAL, () => this.showFatal());
 
     const touch = window.matchMedia('(pointer: coarse)').matches;
     document.body.classList.toggle('is-touch', touch);
+  }
+
+  /** Unrecoverable runtime error: friendly message + reload button. */
+  showFatal() {
+    for (const el of Object.values(this.screens)) el.hidden = true;
+    this.hud.show(false);
+    this.controls.hidden = true;
+    const s = this.screens.loading;
+    s.innerHTML =
+      '<p class="error">Oops — something went wrong.<br />Your coins and best score are saved.</p>' +
+      '<button class="btn btn--primary" data-action="reload">↻ Reload</button>';
+    s.hidden = false;
   }
 
   setProgress(p) {
@@ -61,10 +84,16 @@ export class UIManager {
       menu: () => this.game.quitToMenu(),
       leaderboard: () => this.openLeaderboard(),
       'close-leaderboard': () => this.closeLeaderboard(),
+      reload: () => window.location.reload(),
       mute: () => {
         const muted = this.settings.toggleMuted();
         this.audio.setMuted(muted);
         this.hud.setMuted(muted);
+      },
+      music: () => {
+        const on = this.settings.toggleMusic();
+        this.audio.setMusicEnabled(on);
+        this.hud.setMusic(on);
       },
     };
     document.addEventListener('click', (e) => {
@@ -76,6 +105,19 @@ export class UIManager {
         fn();
       }
     });
+  }
+
+  /** Browsers only allow audio after a user gesture: start the menu music on the first one. */
+  unlockAudioOnFirstGesture() {
+    const unlock = () => {
+      this.audio.unlock();
+      if (this.audio.unlocked) {
+        window.removeEventListener('pointerdown', unlock, true);
+        window.removeEventListener('keydown', unlock, true);
+      }
+    };
+    window.addEventListener('pointerdown', unlock, true);
+    window.addEventListener('keydown', unlock, true);
   }
 
   bindShootButton() {
@@ -103,9 +145,9 @@ export class UIManager {
     for (const el of Object.values(s)) el.hidden = true;
     const playing = state === GAME_STATES.PLAYING || state === GAME_STATES.PAUSED;
     this.hud.show(playing);
-    this.shootBtn.hidden = !(
-      state === GAME_STATES.PLAYING && document.body.classList.contains('is-touch')
-    );
+    this.controls.hidden = state !== GAME_STATES.PLAYING;
+    // offer the update only outside a run, never mid-jump
+    this.updateToast.hidden = !this.updateReady || playing;
     $$('.screen--overlay').forEach((el) => el.classList.remove('is-open'));
 
     switch (state) {
