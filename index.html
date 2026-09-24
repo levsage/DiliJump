@@ -11,7 +11,36 @@
       content="DiliJump — jump, collect DLI coins and climb the leaderboard with the Dlicom mascot."
     />
     <meta name="theme-color" content="#1f5fc9" />
-    <title>DiliJump</title>
+    <meta name="color-scheme" content="dark" />
+    <title>DiliJump — jump with the Dlicom mascot</title>
+    <link rel="canonical" href="https://dili-jump.vercel.app/" />
+
+    <!-- Social link previews (WhatsApp, Facebook, X, Discord, Telegram…) -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="DiliJump" />
+    <meta property="og:title" content="DiliJump — jump with the Dlicom mascot" />
+    <meta
+      property="og:description"
+      content="Jump, grab DLI coins and climb the global leaderboard. Free, no login."
+    />
+    <meta property="og:url" content="https://dili-jump.vercel.app/" />
+    <meta property="og:image" content="https://dili-jump.vercel.app/og-image.jpg" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="DiliJump — the Dlicom mascot jumping for DLI coins" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="DiliJump — jump with the Dlicom mascot" />
+    <meta
+      name="twitter:description"
+      content="Jump, grab DLI coins and climb the global leaderboard. Free, no login."
+    />
+    <meta name="twitter:image" content="https://dili-jump.vercel.app/og-image.jpg" />
+
+    <!-- Installable web app -->
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="DiliJump" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <link rel="icon" type="image/svg+xml" href="/assets/brand/favicon.svg" />
     <link rel="apple-touch-icon" href="/assets/brand/apple-touch-icon.png" />
     <link rel="manifest" href="/manifest.webmanifest" />
@@ -24,7 +53,7 @@
       <header id="hud" class="hud" hidden>
         <div class="hud__row">
           <div class="namebar" title="Player">
-            <img class="namebar__avatar" src="/assets/sprites/idle.png" alt="" />
+            <img class="namebar__avatar" src="/assets/sprites/idle.webp" alt="" />
             <span class="namebar__name" data-bind="player-name">Player</span>
           </div>
           <div class="hud__actions">
@@ -56,6 +85,12 @@
         <button class="ctrl ctrl--move" data-dir="1" tabindex="-1" aria-label="Move right">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8.5 4.5 16 12l-7.5 7.5" /></svg>
         </button>
+      </div>
+
+      <!-- New version available (service worker picked up a new deploy) -->
+      <div id="update-toast" class="toast" role="status" hidden>
+        <span>✨ New version ready</span>
+        <button class="toast__btn" data-action="reload">Reload</button>
       </div>
 
       <!-- Loading -->
@@ -143,7 +178,7 @@
           <img
             class="scoreboard__hero"
             data-bind="result-hero"
-            src="/assets/sprites/hurt.png"
+            src="/assets/sprites/hurt.webp"
             alt=""
           />
           <h2 class="panel__title" data-bind="result-title">Game Over</h2>

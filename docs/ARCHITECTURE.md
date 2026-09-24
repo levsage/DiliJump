@@ -46,6 +46,12 @@ loading ──► menu ──► playing ⇄ paused
 keeps jumps deterministic on any refresh rate and prevents tunnelling through
 platforms on slow frames. Rendering runs once per animation frame.
 
+The next frame is scheduled _before_ a frame runs, and each frame is wrapped in
+`try/catch`: one bad frame is logged once and skipped. After
+`MAX_FRAME_ERRORS` (30) failing frames in a row the loop stops and emits
+`app:fatal`, and the UI shows a "Reload" screen. `AssetLoader` retries each image
+twice before failing the boot.
+
 ## Coordinates
 
 - Logical resolution is **480 × 800**. The canvas is scaled to fit (up to DPR 2).
@@ -121,3 +127,29 @@ implement the same async interface:
 | `subscribe(onChange, onStatus)`                      | Unsubscribe function (realtime)                              |
 
 See [SUPABASE.md](SUPABASE.md) for the database side.
+
+## Production build
+
+`npm run build` produces a hardened static site in `dist/` that works on any
+host (relative `base: './'`: Vercel at `/`, GitHub Pages at `/DiliJump/`).
+
+| Piece                   | Where                                        | What it does                                                                                                                                                                                                                                                             |
+| ----------------------- | -------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Content Security Policy | `tools/vite/csp.js`                          | One policy, sent as a header on Vercel (`vercel.json`) **and** injected as a `<meta>` tag into every build (for Pages). Only `self` and `*.supabase.co` (REST + realtime) are allowed. `tests/production.test.js` fails if `vercel.json` drifts.                         |
+| Service worker          | `tools/vite/serviceWorker.js` → `dist/sw.js` | Generated at build time. Precaches the page, hashed bundles and `public/` (except `og-image`, `404`, `robots`). Navigations are network-first (3.5 s timeout → cached page); same-origin assets cache-first; **cross-origin requests (Supabase) are never intercepted**. |
+| SW registration         | `src/services/serviceWorker.js`              | Production only. Checks for a new deploy when the tab becomes visible; when a new worker takes over, the menu shows "New version ready · Reload" (never mid-run).                                                                                                        |
+| Caching headers         | `vercel.json`                                | `static/*` immutable for a year; `assets/*` a week; `sw.js` and the manifest `no-cache`.                                                                                                                                                                                 |
+| Social card             | `public/og-image.jpg` (`npm run og-image`)   | 1200×630 card rendered from `tools/og/og-image.html` with the real game assets.                                                                                                                                                                                          |
+| No source maps          | `vite.config.js`                             | `build.sourcemap: false`.                                                                                                                                                                                                                                                |
+
+The cache name contains a hash of everything precached, so each deploy gets a
+fresh cache and old ones are deleted when the new worker activates.
+
+### Tests
+
+- `npm test` — Vitest unit tests (`tests/*.test.js`).
+- `npm run test:e2e` — Playwright smoke tests (`tests/e2e/*.spec.js`) against
+  `vite preview` of the production build, on a mobile and a desktop profile:
+  clean console, play/controls/pause, leaderboard, service worker + offline
+  reload, CSP and 404. They run in CI **without** Supabase env on purpose (the
+  offline board), so CI never writes to the live database.

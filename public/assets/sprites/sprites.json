@@ -6,37 +6,37 @@
   "anchor": "bottom-center",
   "frames": {
     "idle": {
-      "file": "idle.png",
+      "file": "idle.webp",
       "w": 208,
       "h": 300
     },
     "jump": {
-      "file": "jump.png",
+      "file": null,
       "w": 208,
       "h": 308
     },
     "fall": {
-      "file": "fall.png",
+      "file": null,
       "w": 240,
       "h": 320
     },
     "crouch": {
-      "file": "crouch.png",
+      "file": null,
       "w": 209,
       "h": 261
     },
     "shoot": {
-      "file": "shoot.png",
+      "file": "shoot.webp",
       "w": 208,
       "h": 310
     },
     "hurt": {
-      "file": "hurt.png",
+      "file": "hurt.webp",
       "w": 229,
       "h": 288
     },
     "cheer": {
-      "file": "cheer.png",
+      "file": "cheer.webp",
       "w": 208,
       "h": 306
     }

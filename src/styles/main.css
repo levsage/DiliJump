@@ -268,6 +268,35 @@ input {
   gap: 2cqw;
 }
 
+/* ---------- Update toast ---------- */
+.toast {
+  position: absolute;
+  z-index: 30;
+  left: 50%;
+  bottom: 22cqw; /* clear of the menu footer hint */
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 3cqw;
+  padding: 2cqw 2cqw 2cqw 4cqw;
+  border-radius: 999px;
+  background: var(--glass-strong);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow);
+  font-size: clamp(11px, 3.4cqw, 18px);
+  white-space: nowrap;
+}
+
+.toast__btn {
+  border: 0;
+  border-radius: 999px;
+  padding: 1.4cqw 3.5cqw;
+  background: var(--c-coin);
+  color: var(--c-ink);
+  font-weight: 800;
+  cursor: pointer;
+}
+
 /* ---------- On-screen controls ---------- */
 .controls {
   position: absolute;

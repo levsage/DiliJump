@@ -12,9 +12,6 @@ import { jumpFrame, springFrame } from './animation.js';
  */
 export const POSE = Object.freeze({
   IDLE: 'idle',
-  JUMP: 'jump',
-  FALL: 'fall',
-  CROUCH: 'crouch',
   SHOOT: 'shoot',
   HURT: 'hurt',
   CHEER: 'cheer',

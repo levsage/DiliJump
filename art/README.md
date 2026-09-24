@@ -18,6 +18,11 @@ npm run sprites
 # = python3 tools/process_sprites.py art/poses public/assets/sprites 320
 ```
 
+All seven poses are processed (so they share one scale), but only the ones the
+game uses — `idle`, `shoot`, `hurt`, `cheer` — are written, as WebP. `jump`,
+`fall` and `crouch` are kept here as source art; in game they were replaced by
+the animation sheets.
+
 Animation sheets:
 
 ```bash

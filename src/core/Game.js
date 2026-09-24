@@ -15,7 +15,11 @@ export class Game {
     this.world = new World(events);
     this.state = GAME_STATES.LOADING;
     this.menuTime = 0;
-    this.loop = new GameLoop({ update: (dt) => this.update(dt), render: (dt) => this.render(dt) });
+    this.loop = new GameLoop({
+      update: (dt) => this.update(dt),
+      render: (dt) => this.render(dt),
+      onFatal: (err) => this.events.emit(EVENTS.FATAL, err),
+    });
     this.bindAudio();
     this.input.onPause = () => this.togglePause();
     document.addEventListener('visibilitychange', () => {

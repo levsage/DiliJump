@@ -4,7 +4,19 @@ export class AssetLoader {
     this.images = new Map();
   }
 
-  loadImage(key, src) {
+  /** Load with a couple of retries — one flaky request must not break the game. */
+  async loadImage(key, src, retries = 2) {
+    for (let attempt = 0; ; attempt++) {
+      try {
+        return await this.loadOnce(key, src);
+      } catch (err) {
+        if (attempt >= retries) throw err;
+        await new Promise((r) => setTimeout(r, 400 * (attempt + 1)));
+      }
+    }
+  }
+
+  loadOnce(key, src) {
     return new Promise((resolve, reject) => {
       const img = new Image();
       img.decoding = 'async';

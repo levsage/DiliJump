@@ -10,6 +10,11 @@ from PIL import Image
 from scipy import ndimage
 
 POSES = ["idle", "jump", "fall", "crouch", "shoot", "hurt", "cheer"]
+# Poses the game still loads as single images. jump / fall / crouch are
+# processed only to keep the shared scale (and the sizes in sprites.json that
+# tools/process_sheets.py matches against); the animation sheets replace them.
+SHIPPED = {"idle", "shoot", "hurt", "cheer"}
+WEBP_QUALITY = 90
 KEY_LO, KEY_HI = 70.0, 175.0   # "magenta-ness" ramp -> alpha
 
 
@@ -65,8 +70,10 @@ def main(src, out, canvas_h=320):
         crop = crop.resize((w, h), Image.LANCZOS)
         canvas = Image.new("RGBA", (canvas_w, canvas_h), (0, 0, 0, 0))
         canvas.paste(crop, ((canvas_w - w) // 2, canvas_h - h), crop)
-        canvas.save(os.path.join(out, f"{p}.png"), optimize=True)
-        meta["frames"][p] = {"file": f"{p}.png", "w": w, "h": h}
+        meta["frames"][p] = {"file": f"{p}.webp" if p in SHIPPED else None, "w": w, "h": h}
+        if p in SHIPPED:
+            canvas.save(os.path.join(out, f"{p}.webp"), "WEBP", quality=WEBP_QUALITY,
+                        method=6, alpha_quality=100)
         print(f"{p:7s} -> {canvas_w}x{canvas_h} (content {w}x{h})")
 
     with open(os.path.join(out, "sprites.json"), "w") as f:

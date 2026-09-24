@@ -6,9 +6,18 @@ and the project uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
-## [1.3.0] - 2026-09-24
+## [2.0.0] - 2026-09-24
+
+The first production release: everything from the unreleased 1.3 line (new animation, controls and music) plus a hardened, installable, offline-capable build.
 
 ### Added
+
+- **Plays offline & installs like an app.** A service worker (generated at build time) precaches the game, so after the first visit DiliJump loads instantly and works with no connection. Scores made offline sync when you're back online.
+- **"New version ready" prompt.** When a new deploy is available the menu offers a one-tap reload — never in the middle of a run.
+- **Link previews.** Open Graph / Twitter card image and tags, so shared links show a proper DiliJump card on WhatsApp, Facebook, X, Discord and Telegram.
+- **Branded 404 page** and richer web-app manifest / iOS home-screen tags.
+- **Crash protection.** A failing frame no longer freezes the game: it is logged once and the loop keeps running; a persistent failure shows a friendly "Reload" screen (coins and best score are safe). Images are retried before giving up.
+- **End-to-end tests.** Playwright smoke tests (mobile + desktop) run against the real production build in CI: menu, play, controls, pause, leaderboard, service worker, offline reload, CSP and the 404 page.
 
 - **12-frame jump animation.** Newly generated frames (landing squat, push-off, rising, apex, falling, ready-to-land), driven by the real jump physics so they always match the arc.
 - **On-screen ◀ ▶ buttons** for easy play on phones and with a mouse: hold to move, slide between them without lifting, multi-touch safe.
@@ -20,6 +29,14 @@ and the project uses [Semantic Versioning](https://semver.org/).
 - **New spring jump animation.** Generated 8-frame superhero super-jump: charge → blast-off → cape-flutter flight with afterimages and sparkles → one somersault → unfold. Replaces the old continuous spin.
 - **Springs "boing"**: they squash, overshoot and wobble with a shock ring. They're a little bigger and gently bob when idle.
 - The ⚡ shoot button now sits between the move buttons.
+- **Content Security Policy everywhere.** One policy (`tools/vite/csp.js`) is sent as a header on Vercel and embedded as a `<meta>` tag in every build, so the GitHub Pages mirror is protected too. A unit test keeps both in sync.
+- **~70% smaller download** (≈ 2.5 MB → 0.75 MB): mascot poses are WebP, unused poses (`jump`, `fall`, `crouch` — replaced by the animation sheets) are no longer shipped, and source maps are no longer published.
+- Vercel: `sw.js` and the manifest are never cached; `Cross-Origin-Opener-Policy` header added.
+
+### Removed
+
+- `public/assets/sprites/*.png` pose images (now `*.webp`; only `idle`, `shoot`, `hurt`, `cheer` are shipped).
+- Public source maps.
 
 ## [1.2.1] - 2026-09-23
 
@@ -85,8 +102,8 @@ and the project uses [Semantic Versioning](https://semver.org/).
 - Keyboard and touch controls, responsive layout, PWA manifest.
 - Tooling: Vite, ESLint, Prettier, Vitest, GitHub Actions CI and GitHub Pages deploy.
 
-[Unreleased]: https://github.com/levsage/DiliJump/compare/v1.3.0...HEAD
-[1.3.0]: https://github.com/levsage/DiliJump/compare/v1.2.1...v1.3.0
+[Unreleased]: https://github.com/levsage/DiliJump/compare/v2.0.0...HEAD
+[2.0.0]: https://github.com/levsage/DiliJump/compare/v1.2.1...v2.0.0
 [1.2.1]: https://github.com/levsage/DiliJump/compare/v1.2.0...v1.2.1
 [1.2.0]: https://github.com/levsage/DiliJump/compare/v1.1.1...v1.2.0
 [1.1.1]: https://github.com/levsage/DiliJump/compare/v1.1.0...v1.1.1

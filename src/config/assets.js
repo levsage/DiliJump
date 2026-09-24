@@ -7,16 +7,11 @@ import SPRITE_SHEETS from './spriteSheets.json';
 const base = import.meta.env?.BASE_URL ?? './';
 const url = (path) => `${base}${path}`;
 
-/** Player poses generated from the official mascot artwork. */
-export const PLAYER_POSES = Object.freeze([
-  'idle',
-  'jump',
-  'fall',
-  'crouch',
-  'shoot',
-  'hurt',
-  'cheer',
-]);
+/**
+ * Single poses generated from the official mascot artwork, used as short
+ * overrides on top of the animation sheets (and `idle` for the HUD avatar).
+ */
+export const PLAYER_POSES = Object.freeze(['idle', 'shoot', 'hurt', 'cheer']);
 
 /**
  * Generated animation sheets (atlas + grid metadata written by
@@ -26,7 +21,9 @@ export { SPRITE_SHEETS };
 
 export const ASSETS = Object.freeze({
   images: {
-    ...Object.fromEntries(PLAYER_POSES.map((p) => [`player.${p}`, url(`assets/sprites/${p}.png`)])),
+    ...Object.fromEntries(
+      PLAYER_POSES.map((p) => [`player.${p}`, url(`assets/sprites/${p}.webp`)]),
+    ),
     ...Object.fromEntries(
       Object.entries(SPRITE_SHEETS).map(([name, s]) => [
         `sheet.${name}`,
