@@ -37,9 +37,45 @@ export const PLAYER = Object.freeze({
   HITBOX_WIDTH: 44,
   HITBOX_HEIGHT: 84,
   FEET_WIDTH: 40,
-  LANDING_POSE_TIME: 0.1,
   SHOOT_POSE_TIME: 0.28,
   SHOOT_COOLDOWN: 0.22,
+});
+
+/** Mascot + spring animation timing (see src/entities/animation.js). */
+export const ANIMATION = Object.freeze({
+  /** Each of the 4 landing/push-off frames of the 12-frame jump. */
+  LAND_FRAME_TIME: 0.035,
+  /** Falling faster than this shows the "ready to land" frame. */
+  FALL_READY_SPEED: 560,
+  SPRING: {
+    CHARGE_TIME: 0.05,
+    BLAST_TIME: 0.12,
+    FLIGHT_FPS: 14,
+    /** Upward speeds (negative = up) where the somersault starts / ends. */
+    TUCK_SPEED: -650,
+    UNFOLD_SPEED: -170,
+    /** Falling speed at which the spring sequence hands over to the jump sheet. */
+    END_SPEED: 140,
+    /** Afterimages drawn behind the mascot during the super-jump. */
+    TRAIL_LENGTH: 4,
+    TRAIL_INTERVAL: 0.035,
+  },
+  SPRING_PAD: {
+    DURATION: 1.2,
+    COMPRESS_TIME: 0.05,
+    COMPRESS: 0.55,
+    OVERSHOOT: 1.25,
+    WOBBLE_HZ: 3.6,
+    DAMPING: 4.2,
+  },
+});
+
+export const MUSIC = Object.freeze({
+  /** Score at which the soundtrack adds its extra "high up" layer. */
+  HIGH_INTENSITY_SCORE: 2500,
+  MENU_VOLUME: 0.8,
+  PAUSE_VOLUME: 0.3,
+  GAME_OVER_VOLUME: 0.45,
 });
 
 export const PLATFORM = Object.freeze({
@@ -68,8 +104,8 @@ export const COIN = Object.freeze({
 });
 
 export const SPRING = Object.freeze({
-  WIDTH: 28,
-  HEIGHT: 16,
+  WIDTH: 32,
+  HEIGHT: 18,
   SPAWN_CHANCE: 0.06,
 });
 

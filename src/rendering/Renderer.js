@@ -2,6 +2,7 @@ import { VIEW, PLAYER, PLATFORM_TYPES } from '../config/constants.js';
 import { COLORS } from './palette.js';
 import { drawLogo } from './brand.js';
 import { Background } from './Background.js';
+import { springStretch } from '../entities/animation.js';
 
 /**
  * Draws the world. Owns the canvas, handles DPR-aware resizing and keeps a
@@ -14,6 +15,7 @@ export class Renderer {
     this.assets = assets;
     this.background = new Background();
     this.poseImages = {};
+    this.sheets = {};
     this.resize = this.resize.bind(this);
     window.addEventListener('resize', this.resize);
     this.resize();
@@ -21,6 +23,14 @@ export class Renderer {
 
   cachePoses(poses) {
     for (const p of poses) this.poseImages[p] = this.assets.get(`player.${p}`);
+  }
+
+  /** Animation atlases: `{ name: { img, cell:[w,h], cols, refHeight } }`. */
+  cacheSheets(meta) {
+    for (const [name, m] of Object.entries(meta)) {
+      const img = this.assets.get(`sheet.${name}`);
+      if (img) this.sheets[name] = { ...m, img };
+    }
   }
 
   resize() {
@@ -126,31 +136,73 @@ export class Renderer {
     ctx.restore();
   }
 
+  /**
+   * Spring pad: a metal coil with a red top plate. When hit it squashes, then
+   * "boings" up past its rest height and wobbles back, with a shock ring.
+   */
   drawSpring(s) {
     const { ctx } = this;
-    const h = s.h * (1 - s.compressed * 0.5) + (s.compressed > 0.5 ? 0 : s.compressed * 10);
-    const x = s.x;
+    const stretch = springStretch(s.t);
+    const idle = s.t < 0 ? Math.sin(s.idle * 4) * 0.06 : 0; // subtle "ready" bob
+    const h = s.h * (1 + stretch + idle);
+    const cx = s.x + s.w / 2;
     const yb = s.platform.y;
+    const coilW = s.w * (1 - stretch * 0.18);
+
     ctx.save();
     ctx.globalAlpha = s.platform.fade;
-    ctx.strokeStyle = '#c7d2e8';
-    ctx.lineWidth = 3;
-    ctx.beginPath();
-    const coils = 4;
-    for (let i = 0; i <= coils * 2; i++) {
-      const px = x + (i % 2 ? s.w - 4 : 4);
-      const py = yb - (i / (coils * 2)) * h;
-      if (i === 0) ctx.moveTo(px, py);
-      else ctx.lineTo(px, py);
+
+    // shock ring when triggered
+    if (s.t >= 0 && s.t < 0.35) {
+      const k = s.t / 0.35;
+      ctx.strokeStyle = `rgba(95,243,255,${(1 - k) * 0.9})`;
+      ctx.lineWidth = 3 * (1 - k) + 1;
+      ctx.beginPath();
+      ctx.ellipse(cx, yb - 2, 14 + k * 46, 4 + k * 12, 0, 0, Math.PI * 2);
+      ctx.stroke();
     }
-    ctx.stroke();
-    ctx.fillStyle = COLORS.danger;
+
+    // coil: back half darker, front half bright, for a 3D helix look
+    const turns = 4;
+    const steps = turns * 16;
+    for (const front of [false, true]) {
+      ctx.strokeStyle = front ? '#e8eefc' : '#7f8db0';
+      ctx.lineWidth = front ? 3 : 2.5;
+      ctx.lineCap = 'round';
+      ctx.beginPath();
+      let drawing = false;
+      for (let i = 0; i <= steps; i++) {
+        const a = (i / 16) * Math.PI * 2;
+        const isFront = Math.cos(a) > 0;
+        const px = cx + Math.sin(a) * (coilW / 2 - 3);
+        const py = yb - (i / steps) * h;
+        if (isFront === front) {
+          if (!drawing) ctx.moveTo(px, py);
+          else ctx.lineTo(px, py);
+          drawing = true;
+        } else drawing = false;
+      }
+      ctx.stroke();
+    }
+
+    // base + top plate
+    ctx.fillStyle = '#56607a';
+    ctx.beginPath();
+    ctx.roundRect(cx - s.w / 2 + 2, yb - 3, s.w - 4, 4, 2);
+    ctx.fill();
+    const plateW = s.w + 6 + Math.max(0, -stretch) * 10;
+    const g = ctx.createLinearGradient(0, yb - h - 7, 0, yb - h);
+    g.addColorStop(0, '#ff8a9f');
+    g.addColorStop(1, COLORS.danger);
+    ctx.fillStyle = g;
     ctx.strokeStyle = COLORS.outline;
     ctx.lineWidth = 2;
     ctx.beginPath();
-    ctx.roundRect(x - 2, yb - h - 6, s.w + 4, 7, 3);
+    ctx.roundRect(cx - plateW / 2, yb - h - 7, plateW, 7, 3);
     ctx.fill();
     ctx.stroke();
+    ctx.fillStyle = 'rgba(255,255,255,.55)';
+    ctx.fillRect(cx - plateW / 2 + 4, yb - h - 5.5, plateW - 8, 1.5);
     ctx.restore();
   }
 
@@ -267,47 +319,83 @@ export class Renderer {
     ctx.globalAlpha = 1;
   }
 
-  drawPlayer(pl) {
+  /** Source image + rect for the player's current frame (sheet frame or single pose). */
+  playerSprite(pl, frame = pl.frame) {
+    const sheet = frame && this.sheets[frame.sheet];
+    if (sheet) {
+      const [cw, ch] = sheet.cell;
+      return {
+        img: sheet.img,
+        sx: (frame.index % sheet.cols) * cw,
+        sy: Math.floor(frame.index / sheet.cols) * ch,
+        sw: cw,
+        sh: ch,
+        pxScale: PLAYER.DRAW_HEIGHT / sheet.refHeight,
+      };
+    }
     const img = this.poseImages[pl.pose] ?? this.poseImages.idle;
-    if (!img) return;
-    drawSprite(this.ctx, img, pl.x, pl.y, PLAYER.DRAW_HEIGHT, {
+    if (!img) return null;
+    return {
+      img,
+      sx: 0,
+      sy: 0,
+      sw: img.width,
+      sh: img.height,
+      pxScale: PLAYER.DRAW_HEIGHT / img.height,
+    };
+  }
+
+  drawPlayer(pl) {
+    const { ctx } = this;
+    // spring super-jump afterimages (oldest first, fading)
+    pl.trail.forEach((t, i) => {
+      const spr = this.playerSprite(pl, t.frame);
+      if (!spr) return;
+      ctx.save();
+      ctx.globalAlpha = 0.32 * (1 - (i + 1) / (pl.trail.length + 1));
+      drawFrame(ctx, spr, t.x, t.y, { facing: pl.facing, rotation: t.rotation });
+      ctx.restore();
+    });
+
+    const spr = this.playerSprite(pl);
+    if (!spr) return;
+    const opts = {
       facing: pl.facing,
       scaleX: pl.scaleX,
       scaleY: pl.scaleY,
       rotation: pl.tilt + pl.spin,
-    });
+    };
+    drawFrame(ctx, spr, pl.x, pl.y, opts);
     // wrap-around ghost so the mascot is visible on both edges
-    const half = (img.width / img.height) * PLAYER.DRAW_HEIGHT * 0.5;
+    const half = spr.sw * spr.pxScale * 0.5;
     const ghostX =
       pl.x < half ? pl.x + VIEW.WIDTH : pl.x > VIEW.WIDTH - half ? pl.x - VIEW.WIDTH : null;
-    if (ghostX !== null) {
-      drawSprite(this.ctx, img, ghostX, pl.y, PLAYER.DRAW_HEIGHT, {
-        facing: pl.facing,
-        scaleX: pl.scaleX,
-        scaleY: pl.scaleY,
-        rotation: pl.tilt + pl.spin,
-      });
-    }
+    if (ghostX !== null) drawFrame(ctx, spr, ghostX, pl.y, opts);
   }
 }
 
-/** Draw a bottom-centre anchored sprite with squash/stretch & rotation about its centre. */
-export function drawSprite(
+/**
+ * Draw a bottom-centre anchored frame with squash/stretch & rotation. The
+ * pivot is the body centre (half the draw height above the feet) so every
+ * frame rotates around the same point, whatever its cell size.
+ */
+export function drawFrame(
   ctx,
-  img,
+  { img, sx, sy, sw, sh, pxScale },
   x,
   y,
-  height,
   { facing = 1, scaleX = 1, scaleY = 1, rotation = 0 } = {},
 ) {
-  const w = (img.width / img.height) * height;
+  const w = sw * pxScale;
+  const h = sh * pxScale;
+  const pivot = PLAYER.DRAW_HEIGHT / 2;
   ctx.save();
   ctx.translate(x, y);
   ctx.scale(scaleX, scaleY);
-  ctx.translate(0, -height / 2);
+  ctx.translate(0, -pivot);
   ctx.rotate(rotation);
   ctx.scale(facing < 0 ? -1 : 1, 1);
-  ctx.drawImage(img, -w / 2, -height / 2, w, height);
+  ctx.drawImage(img, sx, sy, sw, sh, -w / 2, pivot - h, w, h);
   ctx.restore();
 }
 

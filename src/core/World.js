@@ -66,6 +66,7 @@ export class World {
     }
 
     player.update(dt, axis, VIEW.WIDTH);
+    this.emitSpringSparkles(dt);
 
     for (const p of this.platforms) p.update(dt, VIEW.WIDTH);
     for (const s of this.springs) s.update(dt);
@@ -101,6 +102,24 @@ export class World {
       if (player.alive) player.kill();
       this.events.emit(EVENTS.GAME_OVER);
     }
+  }
+
+  /** Energy sparkles streaming from the boots during a spring super-jump. */
+  emitSpringSparkles(dt) {
+    const { player } = this;
+    this.sparkleTimer = (this.sparkleTimer ?? 0) - dt;
+    if (!player.springBoost || player.vy > -500 || this.sparkleTimer > 0) return;
+    this.sparkleTimer = 0.03;
+    this.particles.emit(player.x + (Math.random() - 0.5) * 18, player.y - 6, {
+      count: 2,
+      color: Math.random() < 0.5 ? COLORS.energy : '#ffffff',
+      speed: 90,
+      life: 0.45,
+      size: 3,
+      gravity: 0,
+      angle: Math.PI / 2,
+      spread: 0.9,
+    });
   }
 
   handleLanding() {

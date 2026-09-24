@@ -1,6 +1,6 @@
 /**
- * Unified input: keyboard, touch/pointer halves of the screen and an
- * optional on-screen shoot button. Exposes a simple polled state:
+ * Unified input: keyboard, on-screen ◀ ▶ buttons, touch/pointer halves of the
+ * screen and the on-screen shoot button. Exposes a simple polled state:
  *   input.axis  -> -1 | 0 | 1  (horizontal intent)
  *   input.consumeShoot() -> true once per shoot press
  */
@@ -13,7 +13,9 @@ export class Input {
   constructor(target) {
     this.target = target;
     this.keys = new Set();
-    this.pointers = new Map(); // pointerId -> -1 | 1
+    this.pointers = new Map(); // pointerId -> -1 | 1   (screen halves)
+    this.buttonPointers = new Map(); // pointerId -> -1 | 0 | 1   (◀ ▶ buttons)
+    this.buttonEls = [];
     this.shootQueued = false;
     this.onPause = null;
     this.enabled = true;
@@ -41,6 +43,7 @@ export class Input {
       if (RIGHT_KEYS.has(k)) a += 1;
     }
     for (const dir of this.pointers.values()) a += dir;
+    for (const dir of this.buttonPointers.values()) a += dir;
     return Math.sign(a);
   }
 
@@ -57,7 +60,50 @@ export class Input {
   reset() {
     this.keys.clear();
     this.pointers.clear();
+    this.buttonPointers.clear();
     this.shootQueued = false;
+    this.refreshButtons();
+  }
+
+  /**
+   * On-screen move buttons (`[data-dir="-1"|"1"]` inside `root`). Works with
+   * touch and mouse, supports multi-touch, and a finger can slide from one
+   * arrow to the other without lifting.
+   */
+  bindButtons(root) {
+    this.buttonEls = [...root.querySelectorAll('[data-dir]')];
+    const dirAt = (x, y) => {
+      const el = document.elementFromPoint(x, y)?.closest?.('[data-dir]');
+      return el && root.contains(el) ? Number(el.dataset.dir) : 0;
+    };
+    const set = (id, dir) => {
+      this.buttonPointers.set(id, dir);
+      this.refreshButtons();
+    };
+    const end = (e) => {
+      if (!this.buttonPointers.delete(e.pointerId)) return;
+      this.refreshButtons();
+    };
+    root.addEventListener('pointerdown', (e) => {
+      const btn = e.target.closest?.('[data-dir]');
+      if (!btn || !this.enabled) return;
+      e.preventDefault();
+      btn.setPointerCapture?.(e.pointerId);
+      set(e.pointerId, Number(btn.dataset.dir));
+    });
+    root.addEventListener('pointermove', (e) => {
+      if (this.buttonPointers.has(e.pointerId)) set(e.pointerId, dirAt(e.clientX, e.clientY));
+    });
+    root.addEventListener('pointerup', end);
+    root.addEventListener('pointercancel', end);
+    root.addEventListener('lostpointercapture', end);
+    root.addEventListener('contextmenu', (e) => e.preventDefault()); // long-press menu
+  }
+
+  refreshButtons() {
+    const active = new Set(this.buttonPointers.values());
+    for (const el of this.buttonEls)
+      el.classList.toggle('is-pressed', active.has(Number(el.dataset.dir)));
   }
 
   isTypingTarget(e) {

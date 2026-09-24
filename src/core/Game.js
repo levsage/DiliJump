@@ -1,4 +1,4 @@
-import { GAME_STATES } from '../config/constants.js';
+import { GAME_STATES, MUSIC } from '../config/constants.js';
 import { GameLoop } from './GameLoop.js';
 import { World } from './World.js';
 import { EVENTS } from './EventBus.js';
@@ -20,6 +20,8 @@ export class Game {
     this.input.onPause = () => this.togglePause();
     document.addEventListener('visibilitychange', () => {
       if (document.hidden && this.state === GAME_STATES.PLAYING) this.pause();
+      if (document.hidden) this.audio.suspend();
+      else this.audio.resume();
     });
   }
 
@@ -47,7 +49,28 @@ export class Game {
     const prev = this.state;
     this.state = state;
     this.input.enabled = state === GAME_STATES.PLAYING;
+    this.updateMusic();
     this.events.emit(EVENTS.STATE_CHANGE, { state, prev });
+  }
+
+  /** Soundtrack follows the game state; it gets fuller as you climb. */
+  updateMusic() {
+    const { PLAYING, PAUSED, GAME_OVER } = GAME_STATES;
+    const high = this.world.totalScore >= MUSIC.HIGH_INTENSITY_SCORE;
+    const level = this.state === PLAYING || this.state === PAUSED ? (high ? 2 : 1) : 0;
+    const volume =
+      this.state === PAUSED
+        ? MUSIC.PAUSE_VOLUME
+        : this.state === GAME_OVER
+          ? MUSIC.GAME_OVER_VOLUME
+          : this.state === PLAYING
+            ? 1
+            : MUSIC.MENU_VOLUME;
+    if (level !== this.musicLevel || volume !== this.musicVolume) {
+      this.musicLevel = level;
+      this.musicVolume = volume;
+      this.audio.setMusicMode(level, volume);
+    }
   }
 
   boot() {
@@ -117,6 +140,7 @@ export class Game {
   update(dt) {
     if (this.state === GAME_STATES.PLAYING) {
       this.world.update(dt, this.input);
+      this.updateMusic();
     } else if (this.state === GAME_STATES.MENU) {
       this.updateMenuDemo(dt);
     } else if (this.state === GAME_STATES.GAME_OVER) {

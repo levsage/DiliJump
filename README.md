@@ -8,7 +8,7 @@
 Jump from platform to platform, grab **DLI coins**, dodge glitch bugs and climb the leaderboard.
 
 [![CI](https://github.com/levsage/DiliJump/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/levsage/DiliJump/actions/workflows/ci.yml)
-![version](https://img.shields.io/badge/version-1.2.1-1f5fc9)
+![version](https://img.shields.io/badge/version-1.3.0-1f5fc9)
 ![license](https://img.shields.io/badge/license-MIT-green)
 
 **▶ Play now: [dili-jump.vercel.app](https://dili-jump.vercel.app)** · mirror: [levsage.github.io/DiliJump](https://levsage.github.io/DiliJump/)
@@ -23,26 +23,27 @@ Jump from platform to platform, grab **DLI coins**, dodge glitch bugs and climb 
 
 ## ✨ Features
 
-| Feature                 | Description                                                                                                                 |
-| ----------------------- | --------------------------------------------------------------------------------------------------------------------------- |
-| 🎮 **Single player**    | Endless vertical climb with procedurally generated, always-beatable levels                                                  |
-| 🦸 **Animated mascot**  | 7 generated poses (idle, jump, fall, crouch, shoot, hurt, cheer) + procedural squash & stretch, lean and spring somersaults |
-| 🏷️ **Custom name bar**  | Pick your player name; shown in the in-game HUD and on the leaderboard                                                      |
-| 🔢 **Scoreboard**       | Live score + personal best in the HUD, and a detailed end-of-run scoreboard                                                 |
-| 🏆 **Leaderboard**      | Top-10 local leaderboard with medals, dates and coins                                                                       |
-| 🪙 **DLI coin bar**     | Collect coins stamped with the Dlicom logo; run total in the HUD and a persistent DLI wallet                                |
-| 🧩 **Platforms**        | Normal, moving, breaking and vanishing platforms plus springs                                                               |
-| 👾 **Enemies**          | Glitch bugs — stomp them or shoot them with energy bolts                                                                    |
-| 📱 **Mobile ready**     | Touch controls, responsive letter-boxed layout, installable PWA manifest                                                    |
-| 🔊 **Procedural audio** | Web Audio sound effects, no audio files; mute toggle is saved                                                               |
+| Feature                | Description                                                                                                                   |
+| ---------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| 🎮 **Single player**   | Endless vertical climb with procedurally generated, always-beatable levels                                                    |
+| 🦸 **Animated mascot** | Generated **12-frame jump** and **8-frame spring super-jump** (superhero flight, somersault), plus shoot / hurt / cheer poses |
+| 🏷️ **Custom name bar** | Pick your player name; shown in the in-game HUD and on the leaderboard                                                        |
+| 🔢 **Scoreboard**      | Live score + personal best in the HUD, and a detailed end-of-run scoreboard                                                   |
+| 🏆 **Leaderboard**     | Top-10 local leaderboard with medals, dates and coins                                                                         |
+| 🪙 **DLI coin bar**    | Collect coins stamped with the Dlicom logo; run total in the HUD and a persistent DLI wallet                                  |
+| 🧩 **Platforms**       | Normal, moving, breaking and vanishing platforms plus bouncy "boing" springs                                                  |
+| 👾 **Enemies**         | Glitch bugs — stomp them or shoot them with energy bolts                                                                      |
+| 📱 **Easy controls**   | On-screen ◀ ▶ buttons (touch or mouse, slide between them), keyboard, installable PWA                                         |
+| 🎵 **Music & sound**   | Original chiptune soundtrack that gets fuller as you climb + sound effects, all synthesised live (no audio files)             |
 
 ## 🕹️ Controls
 
-| Action | Keyboard            | Touch                                |
-| ------ | ------------------- | ------------------------------------ |
-| Move   | `←` `→` or `A` `D`  | Hold left / right half of the screen |
-| Shoot  | `Space`, `↑` or `W` | ⚡ button                            |
-| Pause  | `P` or `Esc`        | ❚❚ button                            |
+| Action | Keyboard            | Touch / mouse                                       |
+| ------ | ------------------- | --------------------------------------------------- |
+| Move   | `←` `→` or `A` `D`  | Hold the ◀ ▶ buttons (or either half of the screen) |
+| Shoot  | `Space`, `↑` or `W` | ⚡ button                                           |
+| Pause  | `P` or `Esc`        | ❚❚ button                                           |
+| Music  |                     | 🎵 button (menu and in-game); 🔊 mutes everything   |
 
 ## 🚀 Getting started
 

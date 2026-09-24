@@ -1,5 +1,5 @@
 import './styles/main.css';
-import { ASSETS, PLAYER_POSES } from './config/assets.js';
+import { ASSETS, PLAYER_POSES, SPRITE_SHEETS } from './config/assets.js';
 import { APP } from './config/constants.js';
 import { AssetLoader } from './core/AssetLoader.js';
 import { EventBus } from './core/EventBus.js';
@@ -30,7 +30,7 @@ async function bootstrap() {
   const settings = new SettingsService(storage);
 
   const events = new EventBus();
-  const audio = new AudioManager({ muted: settings.muted });
+  const audio = new AudioManager({ muted: settings.muted, music: settings.music });
   const input = new Input(canvas);
   const assets = new AssetLoader();
   const renderer = new Renderer(canvas, assets);
@@ -40,10 +40,11 @@ async function bootstrap() {
 
   await assets.loadAll(ASSETS, (p) => ui.setProgress(p));
   renderer.cachePoses(PLAYER_POSES);
+  renderer.cacheSheets(SPRITE_SHEETS);
   game.boot();
 
   // Handy for debugging in the browser console.
-  if (import.meta.env?.DEV) window.__DILIJUMP__ = { game, profile, wallet, leaderboard };
+  if (import.meta.env?.DEV) window.__DILIJUMP__ = { game, profile, wallet, leaderboard, audio };
   console.info(`%c${APP.NAME} v${APP.VERSION}`, 'color:#5fb0f5;font-weight:bold');
 }
 

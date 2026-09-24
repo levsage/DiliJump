@@ -1,6 +1,6 @@
 {
   "name": "dilijump",
-  "version": "1.2.1",
+  "version": "1.3.0",
   "description": "DiliJump \u2014 a Doodle Jump\u2013style 2D web game starring the Dlicom mascot. Jump, collect DLI coins, climb the leaderboard.",
   "private": true,
   "type": "module",
@@ -38,6 +38,7 @@
     "format:check": "prettier --check .",
     "check": "npm run lint && npm run format:check && npm run test && npm run build",
     "sprites": "python3 tools/process_sprites.py art/poses public/assets/sprites 320",
+    "sprites:sheets": "python3 tools/process_sheets.py",
     "test:db": "bash supabase/tests/run-local.sh",
     "check:supabase": "node --env-file-if-exists=.env.local tools/supabase-healthcheck.mjs"
   },

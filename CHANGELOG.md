@@ -6,6 +6,21 @@ and the project uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [1.3.0] - 2026-09-24
+
+### Added
+
+- **12-frame jump animation.** Newly generated frames (landing squat, push-off, rising, apex, falling, ready-to-land), driven by the real jump physics so they always match the arc.
+- **On-screen ◀ ▶ buttons** for easy play on phones and with a mouse: hold to move, slide between them without lifting, multi-touch safe.
+- **Background music.** Original chiptune track synthesised live (no audio files). Calm in the menu, fuller in-game, an extra layer above 2 500 points. Ducks on pause and game over; stops when the tab is hidden. 🎵 toggle in the menu and HUD (saved).
+- Sound toggles on the main menu.
+
+### Changed
+
+- **New spring jump animation.** Generated 8-frame superhero super-jump: charge → blast-off → cape-flutter flight with afterimages and sparkles → one somersault → unfold. Replaces the old continuous spin.
+- **Springs "boing"**: they squash, overshoot and wobble with a shock ring. They're a little bigger and gently bob when idle.
+- The ⚡ shoot button now sits between the move buttons.
+
 ## [1.2.1] - 2026-09-23
 
 ### Fixed
@@ -70,7 +85,8 @@ and the project uses [Semantic Versioning](https://semver.org/).
 - Keyboard and touch controls, responsive layout, PWA manifest.
 - Tooling: Vite, ESLint, Prettier, Vitest, GitHub Actions CI and GitHub Pages deploy.
 
-[Unreleased]: https://github.com/levsage/DiliJump/compare/v1.2.1...HEAD
+[Unreleased]: https://github.com/levsage/DiliJump/compare/v1.3.0...HEAD
+[1.3.0]: https://github.com/levsage/DiliJump/compare/v1.2.1...v1.3.0
 [1.2.1]: https://github.com/levsage/DiliJump/compare/v1.2.0...v1.2.1
 [1.2.0]: https://github.com/levsage/DiliJump/compare/v1.1.1...v1.2.0
 [1.1.1]: https://github.com/levsage/DiliJump/compare/v1.1.0...v1.1.1
