@@ -90,6 +90,17 @@ export const ANIMATION = Object.freeze({
   },
 });
 
+/**
+ * Player level: every point you score (all runs added together) is XP.
+ * Reaching level L needs BASE_XP·(L−1) + STEP_XP·(L−1)(L−2)/2 total XP, so each
+ * level costs STEP_XP more than the one before (1 000, 1 500, 2 000, …).
+ * Must match public.player_level_xp() in supabase/migrations/*_player_levels.sql.
+ */
+export const LEVELS = Object.freeze({
+  BASE_XP: 1000,
+  STEP_XP: 500,
+});
+
 export const MUSIC = Object.freeze({
   /** Score at which the soundtrack adds its extra "high up" layer. */
   HIGH_INTENSITY_SCORE: 2500,

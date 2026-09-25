@@ -1,11 +1,12 @@
 import { LEADERBOARD } from '../../config/constants.js';
+import { levelFromXp } from '../../systems/PlayerLevel.js';
 
 /**
  * Offline leaderboard stored in localStorage.
  *
  * Used when Supabase is not configured. Mirrors the online rules:
  * **one entry per person** (matched by name, case-insensitive) holding only
- * their highest score. Implements the same async interface as
+ * their highest score, plus their lifetime XP (`total`, sum of all runs). Implements the same async interface as
  * `SupabaseLeaderboard` so the game does not care which one is active.
  */
 export class LocalLeaderboard {
@@ -52,26 +53,54 @@ export class LocalLeaderboard {
     return false;
   }
 
+  /** Lifetime XP of an entry (entries from before v2.2 count their best). */
+  static total(e) {
+    return Number.isFinite(e?.total) ? e.total : (e?.score ?? 0);
+  }
+
   /**
-   * Submit a finished run. Keeps only the player's best score.
-   * @returns {Promise<{ rank: number, isBest: boolean, bestScore: number, online: false }>}
+   * Submit a finished run. Keeps only the player's best score; every run adds
+   * to their lifetime XP.
+   * @returns {Promise<{ rank: number, isBest: boolean, bestScore: number,
+   *   totalScore: number, level: number, prevLevel: number, online: false }>}
    */
   async submit({ name, score, coins = 0, height = 0, date = Date.now() }) {
     this.currentName = name;
     const k = LocalLeaderboard.key(name);
     const existing = this.entries.find((e) => LocalLeaderboard.key(e.name) === k);
     const isBest = score > 0 && (!existing || score > existing.score);
+    const prevTotal = existing ? LocalLeaderboard.total(existing) : 0;
+    const total = prevTotal + Math.max(0, score);
 
     if (isBest) {
-      const entry = { id: existing?.id ?? `local-${date}`, name, score, coins, height, date };
+      const entry = {
+        id: existing?.id ?? `local-${date}`,
+        name,
+        score,
+        coins,
+        height,
+        date,
+        total,
+      };
       this.entries = this.entries.filter((e) => e !== existing);
       this.entries.push(entry);
       this.entries.sort(LocalLeaderboard.compare);
       this.save();
+    } else if (existing && score > 0) {
+      existing.total = total;
+      this.save();
     }
 
     const bestScore = Math.max(existing?.score ?? 0, score);
-    return { rank: this.rankOf(name), isBest, bestScore, online: false };
+    return {
+      rank: this.rankOf(name),
+      isBest,
+      bestScore,
+      totalScore: total,
+      level: levelFromXp(total),
+      prevLevel: levelFromXp(prevTotal),
+      online: false,
+    };
   }
 
   rankOf(name) {
@@ -83,6 +112,8 @@ export class LocalLeaderboard {
     const me = LocalLeaderboard.key(this.currentName);
     return this.entries.slice(0, limit).map((e, i) => ({
       ...e,
+      totalScore: LocalLeaderboard.total(e),
+      level: levelFromXp(LocalLeaderboard.total(e)),
       rank: i + 1,
       isMe: Boolean(me) && LocalLeaderboard.key(e.name) === me,
     }));
@@ -90,7 +121,10 @@ export class LocalLeaderboard {
 
   async myEntry() {
     const rank = this.rankOf(this.currentName);
-    return rank ? { ...this.entries[rank - 1], rank, isMe: true } : null;
+    if (!rank) return null;
+    const e = this.entries[rank - 1];
+    const totalScore = LocalLeaderboard.total(e);
+    return { ...e, totalScore, level: levelFromXp(totalScore), rank, isMe: true };
   }
 
   async rename(oldName, newName) {
@@ -99,6 +133,15 @@ export class LocalLeaderboard {
     const entry = this.entries.find((e) => LocalLeaderboard.key(e.name) === k);
     if (entry) {
       entry.name = newName;
+      // merging into an existing entry of the new name keeps the XP of both
+      const other = this.entries.find(
+        (e) => e !== entry && LocalLeaderboard.key(e.name) === LocalLeaderboard.key(newName),
+      );
+      if (other) {
+        const sum = LocalLeaderboard.total(entry) + LocalLeaderboard.total(other);
+        entry.total = sum;
+        other.total = sum;
+      }
       this.entries = LocalLeaderboard.dedupe(this.entries);
       this.save();
     }

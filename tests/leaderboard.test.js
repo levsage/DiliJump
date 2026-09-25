@@ -63,6 +63,23 @@ describe('LocalLeaderboard — one best entry per person', () => {
     expect((await lb.top())[0].name).toBe('New');
   });
 
+  it('adds every run to the lifetime XP and level', async () => {
+    const lb = new LocalLeaderboard(storage);
+    await lb.submit({ name: 'Alice', score: 800, date: 1 });
+    const res = await lb.submit({ name: 'Alice', score: 300, date: 2 }); // not a best
+    expect(res).toMatchObject({ isBest: false, totalScore: 1100, level: 2, prevLevel: 1 });
+    await lb.submit({ name: 'alice', score: 1500, date: 3 }); // new best keeps the XP
+    const [top] = await lb.top();
+    expect(top).toMatchObject({ score: 1500, totalScore: 2600, level: 3 });
+  });
+
+  it('counts the best score as XP for entries from before v2.2', async () => {
+    storage.set('leaderboard', [{ id: 'l', name: 'Old', score: 1200, coins: 0, date: 1 }]);
+    const lb = new LocalLeaderboard(storage);
+    expect((await lb.top())[0]).toMatchObject({ totalScore: 1200, level: 2 });
+    expect((await lb.submit({ name: 'Old', score: 100 })).totalScore).toBe(1300);
+  });
+
   it('ignores zero scores', async () => {
     const lb = new LocalLeaderboard(storage);
     expect((await lb.submit({ name: 'A', score: 0 })).rank).toBe(0);
@@ -135,7 +152,46 @@ describe('SupabaseLeaderboard (database only, no login)', () => {
       p_height: 5000,
       p_duration_ms: 61235,
     });
-    expect(res).toEqual({ rank: 3, isBest: true, bestScore: 900, online: true });
+    // database from before v2.2: no level columns → nulls, nothing breaks
+    expect(res).toEqual({
+      rank: 3,
+      isBest: true,
+      bestScore: 900,
+      totalScore: null,
+      level: null,
+      prevLevel: null,
+      online: true,
+    });
+  });
+
+  it('returns lifetime XP and level from submit_score (v2.2 database)', async () => {
+    const client = fakeClient({
+      rpcImpl: async () => ({
+        data: [
+          {
+            best_score: 900,
+            is_best: false,
+            rank: 3,
+            total_score: '2600',
+            level: 3,
+            prev_level: 2,
+          },
+        ],
+        error: null,
+      }),
+    });
+    const res = await makeLb(client).submit({ name: 'Alice', score: 200 });
+    expect(res).toMatchObject({ totalScore: 2600, level: 3, prevLevel: 2 });
+  });
+
+  it('maps level + total XP onto leaderboard rows (and tolerates their absence)', () => {
+    const base = { rank: 1, player_id: 'x', name: 'A', best_score: 5, best_at: null };
+    expect(
+      SupabaseLeaderboard.mapRow({ ...base, total_score: 7000, level: 5 }, 'me'),
+    ).toMatchObject({ level: 5, totalScore: 7000 });
+    // total without level → computed with the same formula
+    expect(SupabaseLeaderboard.mapRow({ ...base, total_score: 2500 }, 'me').level).toBe(3);
+    expect(SupabaseLeaderboard.mapRow(base, 'me')).toMatchObject({ level: null, totalScore: null });
   });
 
   it('maps leaderboard rows and flags the current player', async () => {
@@ -205,28 +261,53 @@ describe('SupabaseLeaderboard (database only, no login)', () => {
     );
   });
 
-  it('queues the best unsent run when offline and flushes it later', async () => {
-    let online = false;
-    const client = fakeClient({
-      rpcImpl: async (fn, args) =>
-        online
-          ? { data: [{ best_score: args.p_score, is_best: true, rank: 1 }], error: null }
-          : { data: null, error: { message: 'Failed to fetch' } },
-    });
-    const lb = makeLb(client);
+  it('queues every unsent run while offline (each adds XP) and flushes them one by one', async () => {
+    vi.useFakeTimers();
+    try {
+      let online = false;
+      const client = fakeClient({
+        rpcImpl: async (fn, args) =>
+          online
+            ? { data: [{ best_score: args.p_score, is_best: true, rank: 1 }], error: null }
+            : { data: null, error: { message: 'Failed to fetch' } },
+      });
+      const lb = makeLb(client);
+      lb.scheduleRetry = () => {};
+
+      expect((await lb.submit({ name: 'A', score: 300 })).queued).toBe(true);
+      await lb.submit({ name: 'A', score: 100 });
+      expect(storage.get('leaderboard:pending').map((r) => r.score)).toEqual([300, 100]);
+
+      online = true;
+      await lb.flushPending();
+      expect(client.rpc).toHaveBeenLastCalledWith(
+        'submit_score',
+        expect.objectContaining({ p_score: 300 }),
+      );
+      expect(storage.get('leaderboard:pending').map((r) => r.score)).toEqual([100]);
+
+      // the next one waits for the database's 3 s rate limit
+      await vi.advanceTimersByTimeAsync(3400);
+      expect(client.rpc).toHaveBeenLastCalledWith(
+        'submit_score',
+        expect.objectContaining({ p_score: 100 }),
+      );
+      expect(storage.get('leaderboard:pending')).toBeNull();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('migrates the pre-v2.2 single pending run and caps the queue', async () => {
+    storage.set('leaderboard:pending', { name: 'A', score: 50 });
+    const lb = makeLb(fakeClient());
     lb.scheduleRetry = () => {};
-
-    expect((await lb.submit({ name: 'A', score: 300 })).queued).toBe(true);
-    await lb.submit({ name: 'A', score: 100 });
-    expect(storage.get('leaderboard:pending').score).toBe(300);
-
-    online = true;
-    await lb.flushPending();
-    expect(storage.get('leaderboard:pending')).toBeNull();
-    expect(client.rpc).toHaveBeenLastCalledWith(
-      'submit_score',
-      expect.objectContaining({ p_score: 300 }),
-    );
+    expect(lb.pending().map((r) => r.score)).toEqual([50]);
+    for (let i = 1; i <= 40; i++) lb.queue({ name: 'A', score: i * 10 });
+    const scores = lb.pending().map((r) => r.score);
+    expect(scores).toHaveLength(30);
+    expect(Math.min(...scores)).toBe(110); // smallest runs dropped first
+    expect(scores).toEqual([...scores].sort((x, y) => x - y)); // order preserved
   });
 
   it('does not retry runs the database rejected', async () => {

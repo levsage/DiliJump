@@ -66,6 +66,42 @@ test('play → HUD + controls, pause and resume, back to menu', async ({ page })
   expect(errors).toEqual([]);
 });
 
+test('player level: XP bar on the menu, level badge in the HUD and leaderboard', async ({
+  page,
+}) => {
+  const errors = watchErrors(page);
+  // a player from before v2.2 (no lifetime XP yet) + a board entry with a level
+  await page.addInitScript(() => {
+    if (sessionStorage.getItem('seeded')) return;
+    sessionStorage.setItem('seeded', '1');
+    localStorage.setItem(
+      'dilijump:v1:profile',
+      JSON.stringify({ name: 'Leveler', bestScore: 2600, gamesPlayed: 3 }),
+    );
+    localStorage.setItem(
+      'dilijump:v1:leaderboard',
+      JSON.stringify([
+        { id: 'x', name: 'Rahim', score: 5000, coins: 1, height: 1, date: 1, total: 27000 },
+      ]),
+    );
+  });
+  await openMenu(page);
+  // the best score counts as XP: 2 600 → level 3, 100 / 2 000 into it
+  await expect(page.locator('[data-bind="menu-xp-level"]')).toHaveText('3');
+  await expect(page.locator('[data-bind="menu-xp-text"]')).toHaveText('100 / 2,000 XP');
+
+  await page.click('#screen-menu [data-action="play"]');
+  await expect(page.locator('[data-bind="player-level"]')).toHaveText('Lv 3');
+  await page.keyboard.press('p');
+  await page.click('#screen-pause [data-action="menu"]');
+
+  await page.click('#screen-menu [data-action="leaderboard"]');
+  const row = page.locator('#screen-leaderboard .lb-row').first();
+  await expect(row.locator('.lvl-pill')).toHaveText('Lv 10');
+  await expect(row).toContainText('Rahim');
+  expect(errors).toEqual([]);
+});
+
 test('leaderboard opens and closes', async ({ page }) => {
   const errors = watchErrors(page);
   await openMenu(page);

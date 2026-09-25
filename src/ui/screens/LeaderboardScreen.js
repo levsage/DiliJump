@@ -1,4 +1,5 @@
 import { $, bound } from '../dom.js';
+import { levelLabel } from '../levelView.js';
 import { escapeHtml, formatDate, formatNumber } from '../../utils/format.js';
 
 const MEDALS = ['🥇', '🥈', '🥉'];
@@ -106,10 +107,15 @@ export class LeaderboardScreen {
 
   row(e, extraClass = '') {
     const place = MEDALS[e.rank - 1] ?? `${e.rank}`;
+    // level is missing only while the database predates player levels
+    const lvl =
+      e.level > 0
+        ? `<b class="lvl-pill" title="Level ${e.level} · ${formatNumber(e.totalScore ?? 0)} XP">${levelLabel(e.level)}</b>`
+        : '';
     return `
       <li class="lb-row${e.isMe ? ' is-me' : ''}${extraClass}">
         <span class="lb-row__rank">${place}</span>
-        <span class="lb-row__name"><span>${escapeHtml(e.name)}${e.isMe ? ' <em>(you)</em>' : ''}</span><small>${formatDate(e.date)}</small></span>
+        <span class="lb-row__name"><span class="lb-row__who">${lvl}<span>${escapeHtml(e.name)}${e.isMe ? ' <em>(you)</em>' : ''}</span></span><small>${formatDate(e.date)}</small></span>
         <span class="lb-row__coins"><img src="${this.coinSrc}" alt="" />${formatNumber(e.coins ?? 0)}</span>
         <span class="lb-row__score">${formatNumber(e.score)}</span>
       </li>`;

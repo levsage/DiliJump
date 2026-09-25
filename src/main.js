@@ -27,10 +27,17 @@ async function bootstrap() {
   const wallet = new WalletService(storage);
   const leaderboard = createLeaderboard(storage);
   leaderboard.setCurrentName(profile.name);
-  leaderboard.init().catch((err) => console.warn('[leaderboard] offline:', err.message));
   const settings = new SettingsService(storage);
 
   const events = new EventBus();
+  leaderboard
+    .init()
+    .then(() => leaderboard.myEntry())
+    .then((me) => {
+      // adopt the lifetime XP stored online (includes runs from before v2.2)
+      if (me && profile.syncTotal(me.totalScore)) events.emit(EVENTS.PROFILE_SYNCED);
+    })
+    .catch((err) => console.warn('[leaderboard] offline:', err.message));
   const audio = new AudioManager({ muted: settings.muted, music: settings.music });
   const input = new Input(canvas);
   const assets = new AssetLoader();

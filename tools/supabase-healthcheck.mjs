@@ -140,6 +140,23 @@ const isMissingFn = (e) =>
   } else fail('migration', `get_leaderboard() error: ${error.message}`);
 }
 
+// Player levels (v2.2): same formula as src/systems/PlayerLevel.js
+{
+  const fix = 'Run supabase/migrations/20260925120000_player_levels.sql in the SQL Editor';
+  const { data, error } = await supabase.rpc('player_level', { p_total: 2500 });
+  if (error)
+    fail('migration', `player_level() ${isMissingFn(error) ? 'not found' : error.message}`, fix);
+  else if (Number(data) !== 3) fail('migration', `player_level(2500) = ${data}, expected 3`, fix);
+  else {
+    const board = await supabase.rpc('get_leaderboard', { p_limit: 1 });
+    const row = board.data?.[0];
+    if (board.error || (row && !('level' in row && 'total_score' in row)))
+      fail('migration', 'get_leaderboard() does not return level / total_score yet', fix);
+    else
+      ok('migration', 'Player levels: player_level() matches the game, leaderboard returns levels');
+  }
+}
+
 // ---------------------------------------------------------------------------
 // 3. No-login identity (random id + secret, like the game creates)
 // ---------------------------------------------------------------------------

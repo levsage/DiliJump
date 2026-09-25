@@ -55,6 +55,9 @@
           <div class="namebar" title="Player">
             <img class="namebar__avatar" src="/assets/sprites/idle.webp" alt="" />
             <span class="namebar__name" data-bind="player-name">Player</span>
+            <span class="lvl-pill lvl-pill--hud" data-bind="player-level" title="Player level"
+              >Lv 1</span
+            >
           </div>
           <div class="hud__actions">
             <button class="icon-btn" data-action="music" aria-label="Toggle music">🎵</button>
@@ -148,6 +151,12 @@
           </div>
         </div>
 
+        <div class="xpbar" title="Every point you score is XP — all runs add up">
+          <span class="xpbar__badge">LEVEL <b data-bind="menu-xp-level">1</b></span>
+          <div class="xpbar__track"><div class="xpbar__fill" data-bind="menu-xp-fill"></div></div>
+          <span class="xpbar__text" data-bind="menu-xp-text">0 / 1,000 XP</span>
+        </div>
+
         <button class="btn btn--primary btn--big" data-action="play">▶ PLAY</button>
         <button class="btn btn--ghost" data-action="leaderboard">🏆 Leaderboard</button>
 
@@ -201,6 +210,16 @@
               <dd>+<span data-bind="result-coins">0</span></dd>
             </div>
           </dl>
+          <div class="scoreboard__level">
+            <p class="levelup" data-bind="result-levelup" hidden></p>
+            <div class="xpbar xpbar--compact">
+              <span class="xpbar__badge">LV <b data-bind="result-xp-level">1</b></span>
+              <div class="xpbar__track">
+                <div class="xpbar__fill" data-bind="result-xp-fill"></div>
+              </div>
+              <span class="xpbar__text" data-bind="result-xp-text">+0 XP</span>
+            </div>
+          </div>
           <p class="scoreboard__wallet">
             <img src="/assets/brand/dli-coin.svg" alt="" /> Wallet:
             <b data-bind="result-wallet">0</b> DLI

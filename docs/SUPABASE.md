@@ -41,6 +41,11 @@ need to set up sign-in providers.
 
 1. [`supabase/migrations/20260923120000_live_leaderboard.sql`](../supabase/migrations/20260923120000_live_leaderboard.sql): tables, RLS, leaderboard, realtime
 2. [`supabase/migrations/20260923140000_no_login_players.sql`](../supabase/migrations/20260923140000_no_login_players.sql): no-login identities and the `submit_score` / `rename_player` / `get_player_rank` functions
+3. [`supabase/migrations/20260925120000_player_levels.sql`](../supabase/migrations/20260925120000_player_levels.sql): **player levels** (v2.2) — `players.total_score` (lifetime XP, back-filled from the run history), `player_level()`, and `level` / `total_score` on `submit_score`, `get_leaderboard` and `get_player_rank`
+
+> **Upgrading to v2.2:** run file 3 only. It's backward compatible: older game
+> versions keep working, and the v2.2 game works before it's applied (levels
+> then come from each browser only and aren't shown on the global board).
 
 > **Upgrading from v1.1** (anonymous sign-ins): run file 2. Then, once v1.2 is
 > live, run [`supabase/snippets/reset_leaderboard.sql`](../supabase/snippets/reset_leaderboard.sql)
@@ -104,8 +109,9 @@ npm run test:db   # needs PostgreSQL + psql (PGHOST/PGUSER/PGPASSWORD)
 ```
 
 This runs every migration twice against a throwaway database with a tiny
-Supabase shim, then the assertions in
-[`supabase/tests/leaderboard_test.sql`](../supabase/tests/leaderboard_test.sql).
+Supabase shim, then the assertions in every `supabase/tests/*_test.sql`
+([`leaderboard_test.sql`](../supabase/tests/leaderboard_test.sql),
+[`levels_test.sql`](../supabase/tests/levels_test.sql)).
 CI runs it on every push.
 
 ## Troubleshooting
@@ -114,6 +120,7 @@ CI runs it on every push.
 | ---------------------------------------- | --------------------------------------------------------------------------------------------------------- |
 | Badge says **Offline · this device**     | Env vars missing at build time. Add them in Vercel, then redeploy.                                        |
 | `function submit_score does not exist`   | Run migration 2                                                                                           |
+| No **Lv** badges on the global board     | Run migration 3 (player levels)                                                                           |
 | Board loads but never shows **LIVE**     | **Database → Publications → supabase_realtime**: include `players`. The board still refreshes every 15 s. |
 | `Invalid player credentials`             | The browser's secret doesn't match (e.g. edited localStorage). Clear site data to become a new player.    |
 | `Too many new players from this network` | 30 new ids per IP per hour. Wait, or raise the limit in `authorize_player`.                               |

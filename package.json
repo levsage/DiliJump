@@ -1,7 +1,7 @@
 {
   "name": "dilijump",
-  "version": "2.1.0",
-  "description": "DiliJump \u2014 a Doodle Jump\u2013style 2D web game starring the Dlicom mascot. Jump, collect DLI coins, climb the leaderboard.",
+  "version": "2.2.0",
+  "description": "DiliJump — a Doodle Jump–style 2D web game starring the Dlicom mascot. Jump, collect DLI coins, climb the leaderboard.",
   "private": true,
   "type": "module",
   "license": "MIT",

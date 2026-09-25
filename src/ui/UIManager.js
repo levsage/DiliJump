@@ -51,6 +51,10 @@ export class UIManager {
       this.onState(this.game.state);
     });
     events.on(EVENTS.FATAL, () => this.showFatal());
+    events.on(EVENTS.PROFILE_SYNCED, () => {
+      this.hud.refreshProfile();
+      if (game.state === GAME_STATES.MENU) this.menu.refresh();
+    });
 
     const touch = window.matchMedia('(pointer: coarse)').matches;
     document.body.classList.toggle('is-touch', touch);

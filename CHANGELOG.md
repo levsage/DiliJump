@@ -6,6 +6,22 @@ and the project uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [2.2.0] - 2026-09-25
+
+### Added
+
+- **Player levels.** Every point you score is XP and all your runs add up — even the ones that don't beat your best. The level keeps rising (each level costs 500 XP more than the last: Lv 2 at 1 000, Lv 3 at 2 500, Lv 5 at 7 000, Lv 10 at 27 000).
+  - **Lv badge next to every name on the leaderboard**, visible to everyone.
+  - Level + XP bar on the main menu, level badge in the HUD name bar.
+  - Game over shows "+score XP" and a **LEVEL UP!** banner with a jingle.
+  - Existing players keep everything they've already scored: their XP is back-filled from their whole run history.
+- Database migration `20260925120000_player_levels.sql` (`players.total_score`, `player_level()`; `submit_score`, `get_leaderboard` and `get_player_rank` return `total_score` + `level`). Backward compatible in both directions. SQL tests in `supabase/tests/levels_test.sql`; the health check verifies it.
+
+### Changed
+
+- **3-pose jump** (was 30 frames): squat → rising → falling, picked from the generated art. The jump sheet shrank from 267 KB to 26 KB.
+- Offline runs are all kept and synced (up to 30) instead of only the best one, so no XP is lost.
+
 ## [2.1.0] - 2026-09-25
 
 ### Added
@@ -117,7 +133,8 @@ The first production release: everything from the unreleased 1.3 line (new anima
 - Keyboard and touch controls, responsive layout, PWA manifest.
 - Tooling: Vite, ESLint, Prettier, Vitest, GitHub Actions CI and GitHub Pages deploy.
 
-[Unreleased]: https://github.com/levsage/DiliJump/compare/v2.1.0...HEAD
+[Unreleased]: https://github.com/levsage/DiliJump/compare/v2.2.0...HEAD
+[2.2.0]: https://github.com/levsage/DiliJump/compare/v2.1.0...v2.2.0
 [2.1.0]: https://github.com/levsage/DiliJump/compare/v2.0.0...v2.1.0
 [2.0.0]: https://github.com/levsage/DiliJump/compare/v1.2.1...v2.0.0
 [1.2.1]: https://github.com/levsage/DiliJump/compare/v1.2.0...v1.2.1

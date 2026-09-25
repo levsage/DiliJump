@@ -15,4 +15,6 @@ for f in supabase/migrations/*.sql; do
   psql -q -v ON_ERROR_STOP=1 -f "$f"
   psql -q -v ON_ERROR_STOP=1 -f "$f"   # must be re-runnable
 done
-psql -q -v ON_ERROR_STOP=1 -f supabase/tests/leaderboard_test.sql 2>&1 | grep -E 'PASS|PASSED|ERROR'
+for t in supabase/tests/*_test.sql; do
+  psql -q -v ON_ERROR_STOP=1 -f "$t" 2>&1 | grep -E 'PASS|PASSED|ERROR'
+done

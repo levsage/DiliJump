@@ -129,4 +129,9 @@ export class AudioManager {
       this.tone({ freq: f, dur: 0.18, type: 'square', vol: 0.18, delay: i * 0.1 }),
     );
   }
+  levelUp() {
+    [784, 988, 1175, 1568, 1976].forEach((f, i) =>
+      this.tone({ freq: f, dur: 0.14, type: 'triangle', vol: 0.3, delay: i * 0.07 }),
+    );
+  }
 }

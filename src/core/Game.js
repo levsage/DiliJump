@@ -120,12 +120,26 @@ export class Game {
     const score = this.world.totalScore;
     const height = Math.floor(this.world.altitude);
     const coins = this.wallet.commitRun();
+    const prevLevel = this.profile.level;
     const isBest = this.profile.recordRun(score);
     if (isBest) this.audio.highScore();
     else this.audio.gameOver();
+    let levelUpPlayed = false;
+    const celebrateLevel = () => {
+      if (levelUpPlayed || this.profile.level <= prevLevel) return;
+      levelUpPlayed = true;
+      setTimeout(() => this.audio.levelUp(), 750);
+    };
+    celebrateLevel();
+    const levelInfo = () => ({
+      prevLevel,
+      level: this.profile.level,
+      totalScore: this.profile.totalScore,
+      levelUp: this.profile.level > prevLevel,
+    });
 
     // Show the scoreboard right away; the leaderboard rank arrives async.
-    this.lastResult = { score, coins, isBest, height, rank: null, pending: true };
+    this.lastResult = { score, coins, isBest, height, rank: null, pending: true, ...levelInfo() };
     setTimeout(() => this.setState(GAME_STATES.GAME_OVER), 650);
 
     this.leaderboard
@@ -137,7 +151,15 @@ export class Game {
         durationMs: this.world.elapsed * 1000,
       })
       .then((res) => {
-        Object.assign(this.lastResult, { ...res, isBest: isBest || res.isBest, pending: false });
+        // the database total includes the whole run history — adopt it
+        if (Number.isFinite(res.totalScore)) this.profile.syncTotal(res.totalScore);
+        celebrateLevel();
+        Object.assign(this.lastResult, {
+          ...res,
+          isBest: isBest || res.isBest,
+          pending: false,
+          ...levelInfo(),
+        });
         this.events.emit(EVENTS.RUN_SUBMITTED, this.lastResult);
       });
   }
