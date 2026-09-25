@@ -1,4 +1,4 @@
-import { ANIMATION, PHYSICS } from '../config/constants.js';
+import { ANIMATION } from '../config/constants.js';
 import { clamp } from '../utils/math.js';
 
 /**
@@ -7,41 +7,25 @@ import { clamp } from '../utils/math.js';
  * clock, so the animation always lines up with the actual jump arc no matter
  * how high or long the jump is.
  *
- * Jump sheet (30 frames, see JUMP_PHASES):
- *   0-7   touch-down → deep squat → push-off → tiptoes   (time based, after a bounce)
- *   8-17  launch → rising → joyful apex → floating hang  (by upward velocity)
- *   18-27 arms up → cape billowing up → arms out         (by downward velocity)
- *   28-29 legs reaching down, about to touch down         (falling fast)
+ * Jump sheet (3 frames — picked from the 30-frame source art):
+ *   0  squat / push-off   (for ANIMATION.SQUAT_TIME right after a bounce)
+ *   1  rising, fists up   (while moving up)
+ *   2  falling, cape up   (while moving down)
  *
  * Spring sheet (8 frames):
  *   0     charge        1  blast-off        2-4  superhero flight (cape flutter loop)
  *   5-6   somersault tuck (with one full flip)                7  unfold at the top
  */
-export const JUMP_FRAMES = 30;
+export const JUMP_FRAMES = 3;
 export const SPRING_FRAMES = 8;
 
-/** Frame ranges [first, end) of each phase on the 30-frame jump sheet. */
-export const JUMP_PHASES = Object.freeze({
-  LAND: [0, 8],
-  RISE: [8, 18],
-  FALL: [18, 28],
-  READY: [28, 30],
-});
+/** Frame index of each phase on the 3-frame jump sheet. */
+export const JUMP_POSE = Object.freeze({ SQUAT: 0, RISE: 1, FALL: 2 });
 
-const { LAND, RISE, FALL } = JUMP_PHASES;
-const LAND_TOTAL = ANIMATION.LAND_FRAME_TIME * (LAND[1] - LAND[0]);
-/** Upward speed left once the landing frames have played. */
-const RISE_SPEED = Math.abs(PHYSICS.JUMP_VELOCITY) - PHYSICS.GRAVITY * LAND_TOTAL;
-
-/** Pick a frame in [first, end) for progress t ∈ [0, 1). */
-const inPhase = ([first, end], t) => first + Math.floor(clamp(t, 0, 0.999) * (end - first));
-
-/** @returns {number} frame index 0-29 on the jump sheet */
+/** @returns {number} frame index 0-2 on the jump sheet */
 export function jumpFrame(vy, sinceBounce) {
-  if (sinceBounce < LAND_TOTAL) return inPhase(LAND, sinceBounce / LAND_TOTAL);
-  if (vy < 0) return inPhase(RISE, 1 - -vy / RISE_SPEED);
-  if (vy < ANIMATION.FALL_READY_SPEED) return inPhase(FALL, vy / ANIMATION.FALL_READY_SPEED);
-  return vy < ANIMATION.TOUCHDOWN_SPEED ? JUMP_PHASES.READY[0] : JUMP_PHASES.READY[0] + 1;
+  if (sinceBounce < ANIMATION.SQUAT_TIME) return JUMP_POSE.SQUAT;
+  return vy < 0 ? JUMP_POSE.RISE : JUMP_POSE.FALL;
 }
 
 /**

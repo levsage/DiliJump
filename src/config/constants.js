@@ -65,12 +65,8 @@ export const PLAYER = Object.freeze({
 
 /** Mascot + spring animation timing (see src/entities/animation.js). */
 export const ANIMATION = Object.freeze({
-  /** Each of the 8 landing/push-off frames of the 30-frame jump (~0.15 s total). */
-  LAND_FRAME_TIME: 0.019,
-  /** Falling faster than this shows the "ready to land" frames… */
-  FALL_READY_SPEED: 560,
-  /** …and faster than this the final "about to touch down" frame. */
-  TOUCHDOWN_SPEED: 760,
+  /** How long the squat frame shows after each bounce (3-frame jump). */
+  SQUAT_TIME: 0.1,
   SPRING: {
     CHARGE_TIME: 0.05,
     BLAST_TIME: 0.12,

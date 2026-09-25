@@ -1,9 +1,9 @@
 {
   "jump": {
     "file": "jump-sheet.webp",
-    "cell": [170, 249],
-    "cols": 6,
-    "count": 30,
+    "cell": [165, 244],
+    "cols": 3,
+    "count": 3,
     "anchor": "bottom-center",
     "refHeight": 240.0
   },

@@ -28,9 +28,17 @@ REF_CANVAS_H = 320  # canvas height of the single-pose sprites
 # name -> source sheet, expected frame count, reference frame index and the
 # single-pose sprite whose content height it should match.
 SHEETS = {
-    # 30-frame jump laid out on a 6x5 grid; some capes/boots touch their
-    # neighbours, so it is sliced by grid (cutting along the emptiest lines).
-    "jump": {"src": "art/sheets/jump.png", "count": 30, "ref": 8, "match": "jump", "grid": (6, 5)},
+    # The source art is a 30-frame jump on a 6x5 grid (some capes/boots touch
+    # their neighbours, so it is sliced by grid). The game uses 3 of them —
+    # squat, rising, falling — listed in `pick` (indices into the 30 frames).
+    "jump": {
+        "src": "art/sheets/jump.png",
+        "count": 30,
+        "ref": 8,
+        "match": "jump",
+        "grid": (6, 5),
+        "pick": [3, 9, 22],
+    },
     "spring": {"src": "art/sheets/spring.png", "count": 8, "ref": 1, "match": "shoot"},
 }
 PAD = 6
@@ -132,7 +140,10 @@ def process(name, cfg):
 
     meta = json.load(open(os.path.join(SPRITES, "sprites.json")))
     target_h = meta["frames"][cfg["match"]]["h"]
+    # scale from the full sheet first, so a subset keeps the same size
     scale = target_h / frames[cfg["ref"]].shape[0] * ATLAS_SCALE
+    if "pick" in cfg:
+        frames = [frames[i] for i in cfg["pick"]]
     # never upscale the source art: that only adds bytes, not detail. The
     # atlas then simply uses fewer pixels per mascot (refHeight tells the game).
     atlas_scale = ATLAS_SCALE

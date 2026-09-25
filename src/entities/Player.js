@@ -1,6 +1,6 @@
 import { ANIMATION, PHYSICS, PLAYER, PLAYFIELD, WALL } from '../config/constants.js';
 import { clamp, damp } from '../utils/math.js';
-import { jumpFrame, springFrame } from './animation.js';
+import { JUMP_POSE, jumpFrame, springFrame } from './animation.js';
 
 /**
  * Mascot state + animation.
@@ -42,7 +42,7 @@ export class Player {
     this.springBoost = false;
     this.sinceBounce = 1;
     /** Current sheet frame `{ sheet, index }`, or null while a pose override shows. */
-    this.frame = { sheet: 'jump', index: 8 };
+    this.frame = { sheet: 'jump', index: JUMP_POSE.RISE };
     /** -1 / 1 when the player hit the left / right wall hard this step, else 0. */
     this.wallBump = 0;
     /** Afterimages during the spring super-jump: `[{ x, y, frame, rotation }]`. */
