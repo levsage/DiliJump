@@ -28,7 +28,9 @@ REF_CANVAS_H = 320  # canvas height of the single-pose sprites
 # name -> source sheet, expected frame count, reference frame index and the
 # single-pose sprite whose content height it should match.
 SHEETS = {
-    "jump": {"src": "art/sheets/jump.png", "count": 12, "ref": 3, "match": "jump"},
+    # 30-frame jump laid out on a 6x5 grid; some capes/boots touch their
+    # neighbours, so it is sliced by grid (cutting along the emptiest lines).
+    "jump": {"src": "art/sheets/jump.png", "count": 30, "ref": 8, "match": "jump", "grid": (6, 5)},
     "spring": {"src": "art/sheets/spring.png", "count": 8, "ref": 1, "match": "shoot"},
 }
 PAD = 6
@@ -79,15 +81,63 @@ def tight(rgba, box, lab):
     return crop[ys.min(): ys.max() + 1, xs.min(): xs.max() + 1]
 
 
+def best_cut(profile, centre, window):
+    """Index of the emptiest line (fewest solid pixels) near `centre`."""
+    lo, hi = max(0, int(centre - window)), min(len(profile), int(centre + window))
+    return lo + int(np.argmin(profile[lo:hi]))
+
+
+def grid_frames(rgba, cols, rows):
+    """Slice a sheet laid out on a cols x rows grid, even where poses touch.
+
+    Row bands are cut first along the emptiest horizontal lines, then each
+    band is cut into columns along the emptiest vertical lines, and finally
+    each cell's top/bottom is refined using only that column. Inside a cell
+    only the main pose (and pieces close to its size) is kept, which drops
+    slivers of neighbouring frames left at the cut lines.
+    """
+    solid = rgba[..., 3] > 40
+    h, w = solid.shape
+    ch, cw = h / rows, w / cols
+    row_prof = solid.sum(axis=1)
+    ycuts = [0] + [best_cut(row_prof, ch * k, ch * 0.15) for k in range(1, rows)] + [h]
+    frames = []
+    for r in range(rows):
+        band = solid[ycuts[r]: ycuts[r + 1]]
+        col_prof = band.sum(axis=0)
+        xcuts = [0] + [best_cut(col_prof, cw * k, cw * 0.2) for k in range(1, cols)] + [w]
+        for c in range(cols):
+            x0, x1 = xcuts[c], xcuts[c + 1]
+            col = solid[:, x0:x1].sum(axis=1)
+            y0 = ycuts[r] if r == 0 else best_cut(col, ycuts[r], ch * 0.15)
+            y1 = ycuts[r + 1] if r == rows - 1 else best_cut(col, ycuts[r + 1], ch * 0.15)
+            cell = rgba[y0:y1, x0:x1].copy()
+            lab, n = ndimage.label(ndimage.binary_dilation(cell[..., 3] > 40, iterations=3))
+            sizes = ndimage.sum(np.ones_like(lab), lab, range(1, n + 1))
+            keep = [i + 1 for i, a in enumerate(sizes) if a > sizes.max() * 0.08]
+            cell[..., 3] = np.where(np.isin(lab, keep), cell[..., 3], 0)
+            ys, xs = np.where(cell[..., 3] > 8)
+            frames.append(cell[ys.min(): ys.max() + 1, xs.min(): xs.max() + 1])
+    return frames
+
+
 def process(name, cfg):
     rgb = np.array(Image.open(os.path.join(ROOT, cfg["src"])).convert("RGB")).astype(float)
     rgba = key_out(rgb)
-    boxes, lab = find_frames(rgba, cfg["count"])
-    frames = [tight(rgba, b, lab) for b in boxes]
+    if "grid" in cfg:
+        frames = grid_frames(rgba, *cfg["grid"])
+    else:
+        boxes, lab = find_frames(rgba, cfg["count"])
+        frames = [tight(rgba, b, lab) for b in boxes]
 
     meta = json.load(open(os.path.join(SPRITES, "sprites.json")))
     target_h = meta["frames"][cfg["match"]]["h"]
     scale = target_h / frames[cfg["ref"]].shape[0] * ATLAS_SCALE
+    # never upscale the source art: that only adds bytes, not detail. The
+    # atlas then simply uses fewer pixels per mascot (refHeight tells the game).
+    atlas_scale = ATLAS_SCALE
+    if scale > 1:
+        atlas_scale, scale = ATLAS_SCALE / scale, 1.0
 
     scaled = []
     for f in frames:
@@ -119,7 +169,7 @@ def process(name, cfg):
         "cols": cols,
         "count": len(scaled),
         "anchor": "bottom-center",
-        "refHeight": round(REF_CANVAS_H * ATLAS_SCALE),
+        "refHeight": round(REF_CANVAS_H * atlas_scale, 1),
     }
     print(f"{name:7s} {len(scaled)} frames, cell {cell_w}x{cell_h}, atlas {atlas.size}, "
           f"{os.path.getsize(out_file) // 1024} KB")

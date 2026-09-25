@@ -8,7 +8,7 @@
 Jump from platform to platform, grab **DLI coins**, dodge glitch bugs and climb the leaderboard.
 
 [![CI](https://github.com/levsage/DiliJump/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/levsage/DiliJump/actions/workflows/ci.yml)
-![version](https://img.shields.io/badge/version-2.0.0-1f5fc9)
+![version](https://img.shields.io/badge/version-2.1.0-1f5fc9)
 ![license](https://img.shields.io/badge/license-MIT-green)
 
 **▶ Play now: [dili-jump.vercel.app](https://dili-jump.vercel.app)** · mirror: [levsage.github.io/DiliJump](https://levsage.github.io/DiliJump/)
@@ -26,11 +26,12 @@ Jump from platform to platform, grab **DLI coins**, dodge glitch bugs and climb 
 | Feature                | Description                                                                                                                   |
 | ---------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
 | 🎮 **Single player**   | Endless vertical climb with procedurally generated, always-beatable levels                                                    |
-| 🦸 **Animated mascot** | Generated **12-frame jump** and **8-frame spring super-jump** (superhero flight, somersault), plus shoot / hurt / cheer poses |
+| 🦸 **Animated mascot** | Generated **30-frame jump** and **8-frame spring super-jump** (superhero flight, somersault), plus shoot / hurt / cheer poses |
 | 🏷️ **Custom name bar** | Pick your player name; shown in the in-game HUD and on the leaderboard                                                        |
 | 🔢 **Scoreboard**      | Live score + personal best in the HUD, and a detailed end-of-run scoreboard                                                   |
 | 🏆 **Leaderboard**     | Live global leaderboard (Supabase, realtime) — each player's best score, medals, dates and coins; offline fallback            |
 | 🪙 **DLI coin bar**    | Collect coins stamped with the Dlicom logo; run total in the HUD and a persistent DLI wallet                                  |
+| 🧱 **Side walls**      | Solid glowing walls on both sides: the mascot can't slip off one edge and appear on the other                                 |
 | 🧩 **Platforms**       | Normal, moving, breaking and vanishing platforms plus bouncy "boing" springs                                                  |
 | 👾 **Enemies**         | Glitch bugs — stomp them or shoot them with energy bolts                                                                      |
 | 📱 **Easy controls**   | On-screen ◀ ▶ buttons (touch or mouse, slide between them), keyboard, installable PWA                                         |

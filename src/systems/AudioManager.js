@@ -106,6 +106,10 @@ export class AudioManager {
   shoot() {
     this.tone({ freq: 900, to: 300, dur: 0.1, type: 'sawtooth', vol: 0.15 });
   }
+  /** Soft thud when bumping into a side wall. */
+  bump() {
+    this.tone({ freq: 150, to: 70, dur: 0.09, type: 'triangle', vol: 0.35 });
+  }
   crack() {
     this.tone({ freq: 180, to: 60, dur: 0.18, type: 'sawtooth', vol: 0.3 });
   }

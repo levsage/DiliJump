@@ -12,9 +12,6 @@ export const remap = (v, inMin, inMax, outMin, outMax) =>
 export const damp = (current, target, lambda, dt) =>
   lerp(current, target, 1 - Math.exp(-lambda * dt));
 
-/** Wrap x into [0, width). */
-export const wrap = (x, width) => ((x % width) + width) % width;
-
 export const easeOutBack = (t) => {
   const c1 = 1.70158;
   const c3 = c1 + 1;

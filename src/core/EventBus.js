@@ -27,6 +27,7 @@ export const EVENTS = Object.freeze({
   JUMP: 'player:jump',
   SPRING: 'player:spring',
   SHOOT: 'player:shoot',
+  WALL_BUMP: 'player:wall-bump',
   PLATFORM_BREAK: 'platform:break',
   MONSTER_KILL: 'monster:kill',
   PLAYER_HIT: 'player:hit',

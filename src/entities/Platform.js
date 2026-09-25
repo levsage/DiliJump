@@ -1,4 +1,4 @@
-import { PLATFORM, PLATFORM_TYPES } from '../config/constants.js';
+import { PLATFORM, PLATFORM_TYPES, PLAYFIELD } from '../config/constants.js';
 
 export class Platform {
   constructor(x, y, type = PLATFORM_TYPES.NORMAL, opts = {}) {
@@ -32,14 +32,15 @@ export class Platform {
     this.vy = 60;
   }
 
-  update(dt, worldWidth) {
+  /** @param {{ LEFT: number, RIGHT: number }} bounds moving platforms bounce off the walls */
+  update(dt, bounds = PLAYFIELD) {
     if (this.type === PLATFORM_TYPES.MOVING && !this.broken) {
       this.x += this.vx * dt;
-      if (this.x < 0) {
-        this.x = 0;
+      if (this.x < bounds.LEFT) {
+        this.x = bounds.LEFT;
         this.vx = Math.abs(this.vx);
-      } else if (this.x + this.w > worldWidth) {
-        this.x = worldWidth - this.w;
+      } else if (this.x + this.w > bounds.RIGHT) {
+        this.x = bounds.RIGHT - this.w;
         this.vx = -Math.abs(this.vx);
       }
     }

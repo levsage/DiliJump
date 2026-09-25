@@ -43,6 +43,7 @@ export class Game {
       this.events.emit(EVENTS.HUD_COINS, n);
     });
     on(EVENTS.SHOOT, () => this.audio.shoot());
+    on(EVENTS.WALL_BUMP, () => this.audio.bump());
     on(EVENTS.PLATFORM_BREAK, () => this.audio.crack());
     on(EVENTS.MONSTER_KILL, () => this.audio.stomp());
     on(EVENTS.PLAYER_HIT, () => this.audio.hit());

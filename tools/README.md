@@ -7,6 +7,6 @@
 | `vite/csp.js`              | Content Security Policy (single source) + Vite plugin injecting it as `<meta>` into production builds                                               |
 | `vite/serviceWorker.js`    | Vite plugin generating `dist/sw.js` (precache list + offline strategy) at build time                                                                |
 | `og/render.mjs`            | Renders `og/og-image.html` into the social preview card `public/og-image.jpg` (`npm run og-image`)                                                  |
-| `process_sheets.py`        | Slices the animation sheets in `art/sheets/` (12-frame jump, 8-frame spring) into WebP atlases (`npm run sprites:sheets`)                           |
+| `process_sheets.py`        | Slices the animation sheets in `art/sheets/` (30-frame jump sliced by grid, 8-frame spring) into WebP atlases (`npm run sprites:sheets`)            |
 
 Python requirements: see `requirements.txt`.

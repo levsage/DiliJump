@@ -54,6 +54,13 @@ twice before failing the boot.
 
 ## Coordinates
 
+- **Solid side walls** (`WALL.WIDTH` = 16 px each): the playfield is
+  `PLAYFIELD.LEFT … PLAYFIELD.RIGHT` (16 … 464). There is **no screen
+  wrap-around** — `Player.collideWalls()` stops the mascot at the wall (gloves
+  and cape may tuck `WALL.PLAYER_OVERLAP` px behind it), moving platforms and
+  monsters bounce off the walls, and `LevelGenerator` places everything between
+  them. A hard bump (≥ `WALL.BUMP_SPEED`) emits `player:wall-bump` (dust, wall
+  glow, soft thud). The walls are drawn last, in front of the world.
 - Logical resolution is **480 × 800**. The canvas is scaled to fit (up to DPR 2).
 - World Y grows **downward**; climbing means decreasing Y. `camera.y` is the world Y of the top of the view.
 - Player anchor = **bottom-centre** (feet), matching the sprite canvases.
@@ -70,9 +77,10 @@ the real jump arc:
 
 | Sheet        | Frames | Driven by                                                               |
 | ------------ | ------ | ----------------------------------------------------------------------- |
-| `jump` (12)  | 0-3    | Time since bounce: landing squat → push-off (35 ms each)                |
-|              | 4-7    | Upward speed: rising → apex hang                                        |
-|              | 8-11   | Downward speed: start of fall → legs out, ready to land                 |
+| `jump` (30)  | 0-7    | Time since bounce: touch-down → deep squat → push-off (19 ms each)      |
+|              | 8-17   | Upward speed: launch → rising → joyful apex → floating hang             |
+|              | 18-27  | Downward speed: arms up → cape billowing up → arms out                  |
+|              | 28-29  | Falling fast: legs reaching down, about to touch down                   |
 | `spring` (8) | 0-1    | Charge, blast-off                                                       |
 |              | 2-4    | Superhero flight, cape flutter loop (14 fps) + afterimages and sparkles |
 |              | 5-6    | Somersault tuck with exactly one 360° flip                              |

@@ -6,6 +6,21 @@ and the project uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [2.1.0] - 2026-09-25
+
+### Added
+
+- **Solid side walls.** Glowing walls on both sides of the playfield: the mascot can no longer slip off one edge and reappear on the other. Bumping into a wall gives a little dust puff, a glow and a soft thud. Moving platforms and monsters bounce off the walls, and levels are generated between them.
+
+### Changed
+
+- **30-frame jump animation** (was 12): a newly generated, smoother cycle — touch-down, deep squat, push-off, rising, a joyful apex, floating hang, cape billowing up while falling and legs reaching for the next platform. Every frame is shown on every normal jump, driven by the real jump physics.
+- `tools/process_sheets.py` can slice sheets by grid, even where neighbouring poses touch.
+
+### Removed
+
+- Screen wrap-around (replaced by the walls).
+
 ## [2.0.0] - 2026-09-24
 
 The first production release: everything from the unreleased 1.3 line (new animation, controls and music) plus a hardened, installable, offline-capable build.
@@ -102,7 +117,8 @@ The first production release: everything from the unreleased 1.3 line (new anima
 - Keyboard and touch controls, responsive layout, PWA manifest.
 - Tooling: Vite, ESLint, Prettier, Vitest, GitHub Actions CI and GitHub Pages deploy.
 
-[Unreleased]: https://github.com/levsage/DiliJump/compare/v2.0.0...HEAD
+[Unreleased]: https://github.com/levsage/DiliJump/compare/v2.1.0...HEAD
+[2.1.0]: https://github.com/levsage/DiliJump/compare/v2.0.0...v2.1.0
 [2.0.0]: https://github.com/levsage/DiliJump/compare/v1.2.1...v2.0.0
 [1.2.1]: https://github.com/levsage/DiliJump/compare/v1.2.0...v1.2.1
 [1.2.0]: https://github.com/levsage/DiliJump/compare/v1.1.1...v1.2.0

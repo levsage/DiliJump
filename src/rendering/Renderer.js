@@ -1,4 +1,4 @@
-import { VIEW, PLAYER, PLATFORM_TYPES } from '../config/constants.js';
+import { VIEW, PLAYER, PLATFORM_TYPES, WALL } from '../config/constants.js';
 import { COLORS } from './palette.js';
 import { drawLogo } from './brand.js';
 import { Background } from './Background.js';
@@ -66,6 +66,72 @@ export class Renderer {
     for (const b of world.projectiles) this.drawProjectile(b);
     this.drawParticles(world.particles.items);
     if (world.player) this.drawPlayer(world.player);
+    ctx.restore();
+
+    // side walls in front of everything, so gloves/cape tuck behind them
+    this.drawWalls(camera, world.wallFlash);
+  }
+
+  /**
+   * Solid side walls: navy glass pillars with a glowing inner edge and Dlicom
+   * diamonds anchored to the world, so they scroll past as you climb.
+   */
+  drawWalls(camera, flash) {
+    const { ctx } = this;
+    const W = WALL.WIDTH;
+    const H = VIEW.HEIGHT;
+    ctx.save();
+    ctx.translate(camera.offsetX, 0);
+    for (const side of [-1, 1]) {
+      const x0 = side < 0 ? 0 : VIEW.WIDTH - W; // outer edge of this wall
+      const inner = side < 0 ? W : VIEW.WIDTH - W; // edge facing the playfield
+
+      // body
+      const body = ctx.createLinearGradient(x0, 0, x0 + W, 0);
+      const dark = 'rgba(8, 22, 60, 0.94)';
+      const mid = 'rgba(22, 52, 128, 0.94)';
+      body.addColorStop(0, side < 0 ? dark : mid);
+      body.addColorStop(1, side < 0 ? mid : dark);
+      ctx.fillStyle = body;
+      ctx.fillRect(x0 - 40 * (side < 0 ? 1 : 0), 0, W + 40, H); // overscan for camera shake
+
+      // world-anchored diamonds (the visor's Dlicom diamond)
+      const step = 72;
+      const cx = x0 + W / 2;
+      const first = Math.floor(camera.y / step) * step;
+      ctx.strokeStyle = 'rgba(127, 212, 255, 0.45)';
+      ctx.lineWidth = 1.5;
+      for (let wy = first; wy < camera.y + H + step; wy += step) {
+        const y = wy - camera.y;
+        ctx.beginPath();
+        ctx.moveTo(cx, y - 5);
+        ctx.lineTo(cx + 4, y);
+        ctx.lineTo(cx, y + 5);
+        ctx.lineTo(cx - 4, y);
+        ctx.closePath();
+        ctx.stroke();
+      }
+
+      // inner glow + bright edge line
+      const glow = ctx.createLinearGradient(inner, 0, inner - side * 10, 0);
+      glow.addColorStop(0, 'rgba(95, 243, 255, 0.28)');
+      glow.addColorStop(1, 'rgba(95, 243, 255, 0)');
+      ctx.fillStyle = glow;
+      ctx.fillRect(Math.min(inner, inner - side * 10), 0, 10, H);
+      ctx.fillStyle = 'rgba(160, 230, 255, 0.9)';
+      ctx.fillRect(inner - (side < 0 ? 2 : 0), 0, 2, H);
+
+      // bump flash where the mascot hit the wall
+      if (flash && flash.side === side) {
+        const k = flash.t / WALL.FLASH_TIME;
+        const y = flash.y - camera.y;
+        const g = ctx.createRadialGradient(inner, y, 0, inner, y, 70);
+        g.addColorStop(0, `rgba(95, 243, 255, ${0.75 * k})`);
+        g.addColorStop(1, 'rgba(95, 243, 255, 0)');
+        ctx.fillStyle = g;
+        ctx.fillRect(inner - 70, y - 70, 140, 140);
+      }
+    }
     ctx.restore();
   }
 
@@ -366,11 +432,6 @@ export class Renderer {
       rotation: pl.tilt + pl.spin,
     };
     drawFrame(ctx, spr, pl.x, pl.y, opts);
-    // wrap-around ghost so the mascot is visible on both edges
-    const half = spr.sw * spr.pxScale * 0.5;
-    const ghostX =
-      pl.x < half ? pl.x + VIEW.WIDTH : pl.x > VIEW.WIDTH - half ? pl.x - VIEW.WIDTH : null;
-    if (ghostX !== null) drawFrame(ctx, spr, ghostX, pl.y, opts);
   }
 }
 

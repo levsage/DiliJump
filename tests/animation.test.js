@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { ANIMATION, PHYSICS } from '../src/config/constants.js';
 import {
   JUMP_FRAMES,
+  JUMP_PHASES,
   SPRING_FRAMES,
   jumpFrame,
   springFrame,
@@ -25,29 +26,45 @@ function simulateJump(velocity, landAtStartHeight = true) {
   return frames;
 }
 
-describe('12-frame jump animation', () => {
-  it('plays every one of the 12 frames, in order, during a normal jump', () => {
+describe('30-frame jump animation', () => {
+  const all = Array.from({ length: 30 }, (_, i) => i);
+
+  it('plays every one of the 30 frames, in order, during a normal jump', () => {
     const seq = simulateJump(PHYSICS.JUMP_VELOCITY).map((f) => f.frame);
-    const shown = [...new Set(seq)];
-    expect(JUMP_FRAMES).toBe(12);
-    expect(shown).toEqual([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]);
+    expect(JUMP_FRAMES).toBe(30);
+    expect([...new Set(seq)]).toEqual(all);
     // never goes backwards
     for (let i = 1; i < seq.length; i++) expect(seq[i]).toBeGreaterThanOrEqual(seq[i - 1]);
   });
 
-  it('gives each airborne frame a visible amount of time (≥ 2 render frames at 60 fps)', () => {
+  it('shows every frame for at least one screen refresh at 60 fps', () => {
     const counts = new Map();
     for (const { frame } of simulateJump(PHYSICS.JUMP_VELOCITY))
       counts.set(frame, (counts.get(frame) ?? 0) + 1);
-    for (let f = 0; f < 12; f++)
-      expect(counts.get(f) * PHYSICS.FIXED_STEP).toBeGreaterThanOrEqual(2 / 60 - 1e-9);
+    for (const f of all)
+      expect(counts.get(f) * PHYSICS.FIXED_STEP).toBeGreaterThanOrEqual(1 / 60 - 1e-9);
   });
 
-  it('starts with the landing squat and shows the ready-to-land frame when falling fast', () => {
-    expect(jumpFrame(PHYSICS.JUMP_VELOCITY, 0)).toBe(0);
-    expect(jumpFrame(ANIMATION.FALL_READY_SPEED + 1, 1)).toBe(11);
-    expect(jumpFrame(-5, 1)).toBe(7); // apex hang
-    expect(jumpFrame(5, 1)).toBe(8);
+  it('phases cover the sheet without gaps', () => {
+    const ranges = Object.values(JUMP_PHASES);
+    expect(ranges[0][0]).toBe(0);
+    for (let i = 1; i < ranges.length; i++) expect(ranges[i][0]).toBe(ranges[i - 1][1]);
+    expect(ranges.at(-1)[1]).toBe(JUMP_FRAMES);
+  });
+
+  it('maps key moments of the jump to the right phase', () => {
+    expect(jumpFrame(PHYSICS.JUMP_VELOCITY, 0)).toBe(0); // touch-down
+    expect(jumpFrame(-5, 1)).toBe(JUMP_PHASES.RISE[1] - 1); // floating at the apex
+    expect(jumpFrame(5, 1)).toBe(JUMP_PHASES.FALL[0]); // just started falling
+    expect(jumpFrame(ANIMATION.FALL_READY_SPEED + 1, 1)).toBe(28);
+    expect(jumpFrame(ANIMATION.TOUCHDOWN_SPEED + 1, 1)).toBe(29);
+  });
+
+  it('a short hop onto a higher platform still flows forward', () => {
+    const seq = simulateJump(PHYSICS.JUMP_VELOCITY, false)
+      .filter((f) => f.vy < 300)
+      .map((f) => f.frame);
+    for (let i = 1; i < seq.length; i++) expect(seq[i]).toBeGreaterThanOrEqual(seq[i - 1]);
   });
 });
 
