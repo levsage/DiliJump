@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { ANIMATION, PHYSICS } from '../src/config/constants.js';
 import {
   JUMP_FRAMES,
+  JUMP_POSE,
   SPRING_FRAMES,
   jumpFrame,
   springFrame,
@@ -25,29 +26,29 @@ function simulateJump(velocity, landAtStartHeight = true) {
   return frames;
 }
 
-describe('12-frame jump animation', () => {
-  it('plays every one of the 12 frames, in order, during a normal jump', () => {
+describe('3-frame jump animation', () => {
+  it('shows exactly 3 frames per jump: squat → rising → falling', () => {
     const seq = simulateJump(PHYSICS.JUMP_VELOCITY).map((f) => f.frame);
-    const shown = [...new Set(seq)];
-    expect(JUMP_FRAMES).toBe(12);
-    expect(shown).toEqual([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]);
-    // never goes backwards
-    for (let i = 1; i < seq.length; i++) expect(seq[i]).toBeGreaterThanOrEqual(seq[i - 1]);
+    expect(JUMP_FRAMES).toBe(3);
+    const changes = seq.filter((f, i) => i === 0 || f !== seq[i - 1]);
+    expect(changes).toEqual([JUMP_POSE.SQUAT, JUMP_POSE.RISE, JUMP_POSE.FALL]);
   });
 
-  it('gives each airborne frame a visible amount of time (≥ 2 render frames at 60 fps)', () => {
+  it('holds the squat briefly, then follows the direction of travel', () => {
+    expect(jumpFrame(PHYSICS.JUMP_VELOCITY, 0)).toBe(JUMP_POSE.SQUAT);
+    expect(jumpFrame(-600, ANIMATION.SQUAT_TIME - 0.001)).toBe(JUMP_POSE.SQUAT);
+    expect(jumpFrame(-600, ANIMATION.SQUAT_TIME + 0.001)).toBe(JUMP_POSE.RISE);
+    expect(jumpFrame(-1, 1)).toBe(JUMP_POSE.RISE);
+    expect(jumpFrame(0, 1)).toBe(JUMP_POSE.FALL);
+    expect(jumpFrame(1400, 1)).toBe(JUMP_POSE.FALL);
+  });
+
+  it('each frame is on screen long enough to read (≥ 0.1 s)', () => {
     const counts = new Map();
     for (const { frame } of simulateJump(PHYSICS.JUMP_VELOCITY))
       counts.set(frame, (counts.get(frame) ?? 0) + 1);
-    for (let f = 0; f < 12; f++)
-      expect(counts.get(f) * PHYSICS.FIXED_STEP).toBeGreaterThanOrEqual(2 / 60 - 1e-9);
-  });
-
-  it('starts with the landing squat and shows the ready-to-land frame when falling fast', () => {
-    expect(jumpFrame(PHYSICS.JUMP_VELOCITY, 0)).toBe(0);
-    expect(jumpFrame(ANIMATION.FALL_READY_SPEED + 1, 1)).toBe(11);
-    expect(jumpFrame(-5, 1)).toBe(7); // apex hang
-    expect(jumpFrame(5, 1)).toBe(8);
+    for (const f of Object.values(JUMP_POSE))
+      expect(counts.get(f) * PHYSICS.FIXED_STEP).toBeGreaterThanOrEqual(0.1 - 1e-9);
   });
 });
 

@@ -34,6 +34,27 @@ describe('ProfileService', () => {
     expect(p.gamesPlayed).toBe(2);
   });
 
+  it('adds every run to the lifetime XP (player level)', () => {
+    const p = new ProfileService(storage);
+    p.recordRun(800);
+    p.recordRun(300);
+    expect(p.totalScore).toBe(1100);
+    expect(p.level).toBe(2);
+    expect(p.levelProgress).toMatchObject({ into: 100, needed: 1500 });
+    expect(new ProfileService(storage).totalScore).toBe(1100); // persisted
+  });
+
+  it('starts pre-v3.0 profiles from their best and adopts a higher server total', () => {
+    storage.set('profile', { name: 'Old', bestScore: 900, gamesPlayed: 12 });
+    const p = new ProfileService(storage);
+    expect(p.totalScore).toBe(900);
+    expect(p.syncTotal(5000)).toBe(true);
+    expect(p.level).toBe(4);
+    expect(p.syncTotal(1000)).toBe(false); // never lowers
+    expect(p.syncTotal(undefined)).toBe(false);
+    expect(new ProfileService(storage).totalScore).toBe(5000);
+  });
+
   it('falls back to a default name', () => {
     const p = new ProfileService(storage);
     expect(p.hasName).toBe(false);

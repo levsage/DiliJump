@@ -1,6 +1,6 @@
-import { ANIMATION, PHYSICS, PLAYER } from '../config/constants.js';
+import { ANIMATION, PHYSICS, PLAYER, PLAYFIELD, WALL } from '../config/constants.js';
 import { clamp, damp } from '../utils/math.js';
-import { jumpFrame, springFrame } from './animation.js';
+import { JUMP_POSE, jumpFrame, springFrame } from './animation.js';
 
 /**
  * Mascot state + animation.
@@ -42,7 +42,9 @@ export class Player {
     this.springBoost = false;
     this.sinceBounce = 1;
     /** Current sheet frame `{ sheet, index }`, or null while a pose override shows. */
-    this.frame = { sheet: 'jump', index: 8 };
+    this.frame = { sheet: 'jump', index: JUMP_POSE.RISE };
+    /** -1 / 1 when the player hit the left / right wall hard this step, else 0. */
+    this.wallBump = 0;
     /** Afterimages during the spring super-jump: `[{ x, y, frame, rotation }]`. */
     this.trail = [];
     this.trailTimer = 0;
@@ -99,7 +101,12 @@ export class Player {
     this.setPose(POSE.HURT);
   }
 
-  update(dt, axis, worldWidth) {
+  /**
+   * @param {number} dt
+   * @param {number} axis -1..1 horizontal input
+   * @param {{ LEFT: number, RIGHT: number }} bounds playfield between the walls
+   */
+  update(dt, axis, bounds = PLAYFIELD) {
     this.time += dt;
     this.prevY = this.y;
 
@@ -121,13 +128,27 @@ export class Player {
     this.x += this.vx * dt;
     this.y += this.vy * dt;
 
-    // Screen wrap-around (classic Doodle Jump behaviour).
-    if (this.x < -PLAYER.HITBOX_WIDTH / 2) this.x += worldWidth + PLAYER.HITBOX_WIDTH;
-    else if (this.x > worldWidth + PLAYER.HITBOX_WIDTH / 2)
-      this.x -= worldWidth + PLAYER.HITBOX_WIDTH;
+    this.collideWalls(bounds);
 
     this.shootCooldown = Math.max(0, this.shootCooldown - dt);
     this.updateAnimation(dt);
+  }
+
+  /** Solid side walls: stop at the wall (no wrap-around), report hard bumps. */
+  collideWalls({ LEFT, RIGHT }) {
+    const reach = PLAYER.HITBOX_WIDTH / 2 - WALL.PLAYER_OVERLAP;
+    const minX = LEFT + reach;
+    const maxX = RIGHT - reach;
+    this.wallBump = 0;
+    if (this.x < minX) {
+      this.x = minX;
+      if (this.vx <= -WALL.BUMP_SPEED) this.wallBump = -1;
+      this.vx = Math.max(0, this.vx);
+    } else if (this.x > maxX) {
+      this.x = maxX;
+      if (this.vx >= WALL.BUMP_SPEED) this.wallBump = 1;
+      this.vx = Math.min(0, this.vx);
+    }
   }
 
   updateAnimation(dt) {

@@ -1,4 +1,4 @@
-import { ANIMATION, PHYSICS } from '../config/constants.js';
+import { ANIMATION } from '../config/constants.js';
 import { clamp } from '../utils/math.js';
 
 /**
@@ -7,32 +7,25 @@ import { clamp } from '../utils/math.js';
  * clock, so the animation always lines up with the actual jump arc no matter
  * how high or long the jump is.
  *
- * Jump sheet (12 frames):
- *   0-3   landing squat → push-off         (time based, right after a bounce)
- *   4-7   rising → apex hang                (by upward velocity)
- *   8-10  starting to fall → falling        (by downward velocity)
- *   11    legs out, ready to land           (falling fast)
+ * Jump sheet (3 frames — picked from the 30-frame source art):
+ *   0  squat / push-off   (for ANIMATION.SQUAT_TIME right after a bounce)
+ *   1  rising, fists up   (while moving up)
+ *   2  falling, cape up   (while moving down)
  *
  * Spring sheet (8 frames):
  *   0     charge        1  blast-off        2-4  superhero flight (cape flutter loop)
  *   5-6   somersault tuck (with one full flip)                7  unfold at the top
  */
-export const JUMP_FRAMES = 12;
+export const JUMP_FRAMES = 3;
 export const SPRING_FRAMES = 8;
 
-const LAND_TOTAL = ANIMATION.LAND_FRAME_TIME * 4;
-/** Upward speed left once the four landing frames have played. */
-const RISE_SPEED = Math.abs(PHYSICS.JUMP_VELOCITY) - PHYSICS.GRAVITY * LAND_TOTAL;
+/** Frame index of each phase on the 3-frame jump sheet. */
+export const JUMP_POSE = Object.freeze({ SQUAT: 0, RISE: 1, FALL: 2 });
 
-/** @returns {number} frame index 0-11 on the jump sheet */
+/** @returns {number} frame index 0-2 on the jump sheet */
 export function jumpFrame(vy, sinceBounce) {
-  if (sinceBounce < LAND_TOTAL) return Math.floor(sinceBounce / ANIMATION.LAND_FRAME_TIME);
-  if (vy < 0) {
-    const t = clamp(1 - -vy / RISE_SPEED, 0, 0.999);
-    return 4 + Math.floor(t * 4);
-  }
-  if (vy >= ANIMATION.FALL_READY_SPEED) return 11;
-  return 8 + Math.floor(clamp(vy / ANIMATION.FALL_READY_SPEED, 0, 0.999) * 3);
+  if (sinceBounce < ANIMATION.SQUAT_TIME) return JUMP_POSE.SQUAT;
+  return vy < 0 ? JUMP_POSE.RISE : JUMP_POSE.FALL;
 }
 
 /**

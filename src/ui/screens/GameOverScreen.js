@@ -1,6 +1,8 @@
 import { $, bound, setText } from '../dom.js';
 import { formatNumber } from '../../utils/format.js';
 import { ASSETS } from '../../config/assets.js';
+import { levelProgress } from '../../systems/PlayerLevel.js';
+import { renderXpBar } from '../levelView.js';
 
 /** End-of-run scoreboard. Re-populated when the leaderboard rank arrives. */
 export class GameOverScreen {
@@ -10,7 +12,7 @@ export class GameOverScreen {
     this.wallet = wallet;
   }
 
-  populate({ score, coins, isBest, rank, height, pending, online, queued }) {
+  populate({ score, coins, isBest, rank, height, pending, online, queued, ...lvl }) {
     const r = this.root;
     setText('result-score', formatNumber(score), r);
     setText('result-best', formatNumber(this.profile.bestScore), r);
@@ -22,6 +24,8 @@ export class GameOverScreen {
     setText('result-title', celebrate ? 'New Record!' : 'Game Over', r);
     bound('result-hero', r)[0].src = ASSETS.images[celebrate ? 'player.cheer' : 'player.hurt'];
     r.querySelector('.scoreboard').classList.toggle('is-record', celebrate);
+
+    this.populateLevel({ score, ...lvl });
 
     const badge = bound('result-badge', r)[0];
     badge.hidden = false;
@@ -41,5 +45,25 @@ export class GameOverScreen {
     } else {
       badge.textContent = 'Keep climbing to reach the leaderboard!';
     }
+  }
+
+  /** "+score XP", the level bar and — when earned — the LEVEL UP banner. */
+  populateLevel({ score, totalScore, level, prevLevel, levelUp }) {
+    const r = this.root;
+    const p = levelProgress(totalScore ?? this.profile.totalScore);
+    renderXpBar(r, 'result-xp', p, `+${formatNumber(Math.max(0, score ?? 0))} XP`);
+    const banner = bound('result-levelup', r)[0];
+    const up = Boolean(levelUp) && level > prevLevel;
+    if (up && banner.dataset.level !== String(level)) {
+      const gained = level - prevLevel;
+      banner.textContent = `⭐ LEVEL UP! Level ${formatNumber(level)}${gained > 1 ? ` (+${gained})` : ''}`;
+      banner.dataset.level = String(level);
+      banner.classList.remove('is-pop');
+      void banner.offsetWidth; // restart the pop animation
+      banner.classList.add('is-pop');
+    }
+    banner.hidden = !up;
+    if (!up) delete banner.dataset.level;
+    r.querySelector('.scoreboard__level').classList.toggle('is-levelup', up);
   }
 }

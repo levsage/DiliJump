@@ -54,6 +54,13 @@ twice before failing the boot.
 
 ## Coordinates
 
+- **Solid side walls** (`WALL.WIDTH` = 16 px each): the playfield is
+  `PLAYFIELD.LEFT … PLAYFIELD.RIGHT` (16 … 464). There is **no screen
+  wrap-around** — `Player.collideWalls()` stops the mascot at the wall (gloves
+  and cape may tuck `WALL.PLAYER_OVERLAP` px behind it), moving platforms and
+  monsters bounce off the walls, and `LevelGenerator` places everything between
+  them. A hard bump (≥ `WALL.BUMP_SPEED`) emits `player:wall-bump` (dust, wall
+  glow, soft thud). The walls are drawn last, in front of the world.
 - Logical resolution is **480 × 800**. The canvas is scaled to fit (up to DPR 2).
 - World Y grows **downward**; climbing means decreasing Y. `camera.y` is the world Y of the top of the view.
 - Player anchor = **bottom-centre** (feet), matching the sprite canvases.
@@ -62,7 +69,7 @@ twice before failing the boot.
 
 Normal movement plays **generated animation sheets**; single generated poses
 are short overrides. Sheets are atlases made by `tools/process_sheets.py`
-(`public/assets/sprites/*-sheet.webp` + `src/config/spriteSheets.json`).
+(`public/assets/sprites/*-sheet.<hash>.webp` + `src/config/spriteSheets.json`).
 
 Frames are chosen from the **physics state** (vertical speed + time since the
 last bounce) in `src/entities/animation.js`, so the animation always matches
@@ -70,13 +77,13 @@ the real jump arc:
 
 | Sheet        | Frames | Driven by                                                               |
 | ------------ | ------ | ----------------------------------------------------------------------- |
-| `jump` (12)  | 0-3    | Time since bounce: landing squat → push-off (35 ms each)                |
-|              | 4-7    | Upward speed: rising → apex hang                                        |
-|              | 8-11   | Downward speed: start of fall → legs out, ready to land                 |
+| `jump` (3)   | 0      | Squat / push-off for 0.1 s after each bounce                            |
+|              | 1      | Rising (moving up): fists up, cape flowing                              |
+|              | 2      | Falling (moving down): cape billowing up                                |
 | `spring` (8) | 0-1    | Charge, blast-off                                                       |
 |              | 2-4    | Superhero flight, cape flutter loop (14 fps) + afterimages and sparkles |
 |              | 5-6    | Somersault tuck with exactly one 360° flip                              |
-|              | 7      | Unfold at the top, then hands over to the jump sheet's falling frames   |
+|              | 7      | Unfold at the top, then hands over to the jump sheet's falling frame    |
 | Single poses | —      | `shoot` (0.28 s), `cheer` (menu), `hurt` (dead)                         |
 
 All frames are bottom-centre anchored (horizontal anchor = the body's mass
@@ -101,10 +108,10 @@ All keys are namespaced with `dilijump:v1:` in `localStorage`:
 
 | Key                   | Contents                                                                                                       |
 | --------------------- | -------------------------------------------------------------------------------------------------------------- |
-| `profile`             | `{ name, bestScore, gamesPlayed }`                                                                             |
+| `profile`             | `{ name, bestScore, gamesPlayed, totalScore }` — `totalScore` = lifetime XP → player level                     |
 | `wallet`              | `{ balance, lifetime }` DLI coins                                                                              |
-| `leaderboard`         | Offline board, one best entry per name `[{ id, name, score, coins, height, date }]`                            |
-| `leaderboard:pending` | Best run that failed to reach Supabase (retried)                                                               |
+| `leaderboard`         | Offline board, one best entry per name `[{ id, name, score, coins, height, date, total }]`                     |
+| `leaderboard:pending` | Runs that failed to reach Supabase (up to 30, oldest first; sent one per 3.3 s when back online)               |
 | `identity`            | `{ playerId, secret, createdAt }`, the no-login leaderboard identity (the DB stores only a hash of the secret) |
 | `settings`            | `{ muted, music }`                                                                                             |
 
@@ -117,16 +124,37 @@ If storage is unavailable (private mode), an in-memory backend is used.
 `VITE_SUPABASE_PUBLISHABLE_KEY` are set, otherwise `LocalLeaderboard`. Both
 implement the same async interface:
 
-| Method                                               | Returns                                                      |
-| ---------------------------------------------------- | ------------------------------------------------------------ |
-| `init()`                                             | Creates the Supabase client (database only, no login)        |
-| `submit({ name, score, coins, height, durationMs })` | `{ rank, isBest, bestScore, online, queued? }`               |
-| `top(limit)`                                         | `[{ rank, name, score, coins, date, isMe }]`, one per person |
-| `myEntry()`                                          | The current player's row, or `null`                          |
-| `rename(old, new)`                                   | —                                                            |
-| `subscribe(onChange, onStatus)`                      | Unsubscribe function (realtime)                              |
+| Method                                               | Returns                                                       |
+| ---------------------------------------------------- | ------------------------------------------------------------- |
+| `init()`                                             | Creates the Supabase client (database only, no login)         |
+| `submit({ name, score, coins, height, durationMs })` | `{ rank, isBest, bestScore, totalScore, level, online, … }`   |
+| `top(limit)`                                         | `[{ rank, name, score, coins, date, level, isMe }]`, 1/person |
+| `myEntry()`                                          | The current player's row, or `null`                           |
+| `rename(old, new)`                                   | —                                                             |
+| `subscribe(onChange, onStatus)`                      | Unsubscribe function (realtime)                               |
 
 See [SUPABASE.md](SUPABASE.md) for the database side.
+
+## Player level
+
+Every point scored is XP; all runs add up (`profile.totalScore`, and
+`players.total_score` in the database). The level comes from one formula in
+two places that must agree — `src/systems/PlayerLevel.js` and
+`public.player_level()` — and both are tested against the same fixture
+(`tests/playerLevel.test.js`, `supabase/tests/levels_test.sql`):
+
+```
+XP to reach level L = 1000·(L−1) + 500·(L−1)(L−2)/2
+```
+
+| Level | 2     | 3     | 4     | 5     | 10     | 20      |
+| ----- | ----- | ----- | ----- | ----- | ------ | ------- |
+| XP    | 1 000 | 2 500 | 4 500 | 7 000 | 27 000 | 104 500 |
+
+The game keeps a local total (updated instantly after each run) and adopts the
+database total whenever it is higher (after each submit and at start-up), so
+runs from before v3.0 count too. Shown as the menu XP bar, the HUD badge, the
+game-over "+XP / LEVEL UP!" panel and the **Lv** pill on every leaderboard row.
 
 ## Production build
 

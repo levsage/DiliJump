@@ -1,5 +1,6 @@
 import { EVENTS } from '../core/EventBus.js';
 import { $, bound, setText, pulse } from './dom.js';
+import { levelLabel } from './levelView.js';
 import { formatNumber } from '../utils/format.js';
 
 /**
@@ -20,6 +21,7 @@ export class HUD {
 
   refreshProfile() {
     setText('player-name', this.profile.name, this.root);
+    setText('player-level', levelLabel(this.profile.level), this.root);
     setText('best', formatNumber(this.profile.bestScore), this.root);
   }
 

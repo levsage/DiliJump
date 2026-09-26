@@ -9,6 +9,18 @@
 | Stomp a glitch bug | +50                            |
 | Shoot a glitch bug | +30                            |
 
+## Player level
+
+Every point you score is also **XP**, and all your runs add up — even the ones
+that don't beat your best. Each level costs 500 XP more than the one before:
+
+| Level      | 2     | 3     | 4     | 5     | 10     | 20      |
+| ---------- | ----- | ----- | ----- | ----- | ------ | ------- |
+| Total XP   | 1 000 | 2 500 | 4 500 | 7 000 | 27 000 | 104 500 |
+| Next costs | 1 500 | 2 000 | 2 500 | 3 000 | 5 500  | 10 500  |
+
+Your level is shown next to your name on the leaderboard for everyone to see.
+
 ## Physics (from `src/config/constants.js`)
 
 | Constant           | Value      | Notes                                                    |

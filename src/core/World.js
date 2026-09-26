@@ -1,4 +1,4 @@
-import { VIEW, PHYSICS, SCORING, MONSTER, COIN } from '../config/constants.js';
+import { VIEW, PHYSICS, SCORING, MONSTER, COIN, PLAYFIELD, WALL } from '../config/constants.js';
 import { Player } from '../entities/Player.js';
 import { Projectile } from '../entities/Projectile.js';
 import { ParticleSystem } from '../entities/Particle.js';
@@ -27,6 +27,8 @@ export class World {
     this.monsters = [];
     this.projectiles = [];
     this.particles.clear();
+    /** Wall glow after a bump: `{ side: -1 | 1, y, t }` (t counts down). */
+    this.wallFlash = null;
 
     this.originY = 0;
     this.score = 0;
@@ -65,13 +67,14 @@ export class World {
       this.events.emit(EVENTS.SHOOT);
     }
 
-    player.update(dt, axis, VIEW.WIDTH);
+    player.update(dt, axis, PLAYFIELD);
+    this.handleWallBump(dt);
     this.emitSpringSparkles(dt);
 
-    for (const p of this.platforms) p.update(dt, VIEW.WIDTH);
+    for (const p of this.platforms) p.update(dt, PLAYFIELD);
     for (const s of this.springs) s.update(dt);
     for (const c of this.coins) c.update(dt);
-    for (const m of this.monsters) m.update(dt, VIEW.WIDTH);
+    for (const m of this.monsters) m.update(dt, PLAYFIELD);
     for (const b of this.projectiles) b.update(dt, camera.y);
     this.particles.update(dt);
 
@@ -102,6 +105,30 @@ export class World {
       if (player.alive) player.kill();
       this.events.emit(EVENTS.GAME_OVER);
     }
+  }
+
+  /** Hard bump into a side wall: dust puff, wall glow and a soft thud. */
+  handleWallBump(dt) {
+    if (this.wallFlash) {
+      this.wallFlash.t -= dt;
+      if (this.wallFlash.t <= 0) this.wallFlash = null;
+    }
+    const side = this.player.wallBump;
+    if (!side) return;
+    const y = this.player.y - 46;
+    const x = side < 0 ? PLAYFIELD.LEFT : PLAYFIELD.RIGHT;
+    this.wallFlash = { side, y, t: WALL.FLASH_TIME };
+    this.particles.emit(x, y, {
+      count: 7,
+      color: COLORS.energy,
+      speed: 140,
+      life: 0.35,
+      size: 3,
+      gravity: 300,
+      angle: side < 0 ? 0 : Math.PI,
+      spread: Math.PI * 0.7,
+    });
+    if (!this.over) this.events.emit(EVENTS.WALL_BUMP, side);
   }
 
   /** Energy sparkles streaming from the boots during a spring super-jump. */

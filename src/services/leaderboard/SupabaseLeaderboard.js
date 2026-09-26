@@ -1,7 +1,15 @@
 import { LEADERBOARD } from '../../config/constants.js';
+import { levelFromXp } from '../../systems/PlayerLevel.js';
 
 const PENDING_KEY = 'leaderboard:pending';
 const RETRY_MS = 4000;
+/** Unsent runs kept while offline (every run counts towards the level). */
+const MAX_PENDING = 30;
+/** Gap between flushing queued runs (the database allows one run per 3 s). */
+const FLUSH_GAP_MS = 3300;
+
+/** Number or null (columns missing on databases from before v3.0). */
+const numOrNull = (v) => (v === null || v === undefined ? null : Number(v));
 
 /**
  * Live, global leaderboard stored directly in the Supabase database.
@@ -10,10 +18,11 @@ const RETRY_MS = 4000;
  * - The player is identified by a random id + secret kept in the browser
  *   (`PlayerIdentity`). The database stores only a hash of the secret.
  * - Runs go through the `submit_score` SQL function, which keeps **only the
- *   highest score per person** (see supabase/migrations).
+ *   highest score per person** on the board and adds every run to the
+ *   player's lifetime XP → level (see supabase/migrations).
  * - Changes to `public.players` are pushed through Supabase Realtime.
- * - If the network is down, the best unsent run is kept in localStorage and
- *   retried later, so a record is never lost.
+ * - If the network is down, unsent runs are kept in localStorage and retried
+ *   later, so neither a record nor any XP is lost.
  */
 export class SupabaseLeaderboard {
   /**
@@ -71,7 +80,10 @@ export class SupabaseLeaderboard {
   }
 
   /**
-   * @returns {Promise<{ rank: number, isBest: boolean, bestScore: number, online: boolean, queued?: boolean, error?: string }>}
+   * @returns {Promise<{ rank: number, isBest: boolean, bestScore: number, online: boolean,
+   *   totalScore?: number|null, level?: number|null, prevLevel?: number|null,
+   *   queued?: boolean, error?: string }>}
+   *   `totalScore` / `level` are null when the database predates player levels.
    */
   async submit({ name, score, coins = 0, height = 0, durationMs = 0 }) {
     const run = { name, score, coins, height, durationMs: Math.round(durationMs) };
@@ -86,10 +98,14 @@ export class SupabaseLeaderboard {
       });
       const row = Array.isArray(rows) ? rows[0] : rows;
       this.identity.markRegistered?.();
+      const totalScore = numOrNull(row?.total_score);
       return {
         rank: Number(row?.rank ?? 0),
         isBest: Boolean(row?.is_best),
         bestScore: Number(row?.best_score ?? score),
+        totalScore,
+        level: numOrNull(row?.level),
+        prevLevel: numOrNull(row?.prev_level),
         online: true,
       };
     } catch (err) {
@@ -112,10 +128,22 @@ export class SupabaseLeaderboard {
     return err?.code === '22023' || err?.code === '28000';
   }
 
-  /** Keep only the best unsent run — only the best matters for the board. */
+  /** Unsent runs (oldest first). Older versions stored a single run object. */
+  pending() {
+    const p = this.storage.get(PENDING_KEY);
+    if (Array.isArray(p)) return p;
+    return p && Number.isFinite(p.score) ? [p] : [];
+  }
+
+  /** Keep unsent runs — each one adds XP, the best one may be a record. */
   queue(run) {
-    const pending = this.storage.get(PENDING_KEY);
-    if (!pending || run.score > pending.score) this.storage.set(PENDING_KEY, run);
+    let list = [...this.pending(), run];
+    if (list.length > MAX_PENDING) {
+      // over the cap: drop the smallest scores, keep the order of the rest
+      const keep = new Set([...list].sort((a, b) => b.score - a.score).slice(0, MAX_PENDING));
+      list = list.filter((r) => keep.has(r));
+    }
+    this.storage.set(PENDING_KEY, list);
     this.scheduleRetry();
   }
 
@@ -124,14 +152,21 @@ export class SupabaseLeaderboard {
     this.retryTimer = setTimeout(() => this.flushPending(), RETRY_MS);
   }
 
+  /** Send queued runs one by one (respecting the 3 s rate limit). */
   async flushPending() {
-    const pending = this.storage.get(PENDING_KEY);
-    if (!pending) return;
-    this.storage.remove(PENDING_KEY);
-    await this.submit(pending); // re-queues itself on failure
+    const [next, ...rest] = this.pending();
+    if (!next) return;
+    if (rest.length) this.storage.set(PENDING_KEY, rest);
+    else this.storage.remove(PENDING_KEY);
+    const res = await this.submit(next); // re-queues itself on failure
+    if (res.online && rest.length) {
+      clearTimeout(this.retryTimer);
+      this.retryTimer = setTimeout(() => this.flushPending(), FLUSH_GAP_MS);
+    }
   }
 
   static mapRow(r, playerId) {
+    const totalScore = numOrNull(r.total_score);
     return {
       id: r.player_id,
       rank: Number(r.rank),
@@ -140,6 +175,8 @@ export class SupabaseLeaderboard {
       coins: r.best_coins,
       height: r.best_height,
       date: r.best_at ? Date.parse(r.best_at) : Date.now(),
+      totalScore,
+      level: numOrNull(r.level) ?? (totalScore === null ? null : levelFromXp(totalScore)),
       isMe: r.player_id === playerId,
     };
   }

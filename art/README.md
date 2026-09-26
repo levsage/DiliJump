@@ -8,7 +8,7 @@ Source artwork. **Not shipped** with the game; only the processed files in
 | `source/mascot-reference.png` | Official Dlicom mascot reference (downscaled) |
 | `source/helmet-highlights.png` | Helmet glass highlight layer from the original artwork |
 | `poses/*.png` | AI-generated pose renders on a flat magenta (`#FF00FF`) chroma background |
-| `sheets/jump.png` | AI-generated 12-frame jump cycle (4×3 grid, magenta background) |
+| `sheets/jump.png` | AI-generated 30-frame jump cycle (6×5 grid, magenta background) |
 | `sheets/spring.png` | AI-generated 8-frame spring super-jump (charge, blast-off, flight ×3, tuck ×2, unfold) |
 
 ## Regenerating sprites
@@ -27,7 +27,7 @@ Animation sheets:
 
 ```bash
 npm run sprites:sheets
-# = python3 tools/process_sheets.py  → public/assets/sprites/*-sheet.webp + src/config/spriteSheets.json
+# = python3 tools/process_sheets.py  → public/assets/sprites/*-sheet.<hash>.webp + src/config/spriteSheets.json
 ```
 
 It finds each pose on the sheet, keys out the magenta, scales the sheet so the

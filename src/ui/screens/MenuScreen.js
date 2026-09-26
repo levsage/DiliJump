@@ -2,6 +2,7 @@ import { $, setText } from '../dom.js';
 import { formatNumber } from '../../utils/format.js';
 import { ProfileService } from '../../services/ProfileService.js';
 import { APP } from '../../config/constants.js';
+import { renderXpBar } from '../levelView.js';
 
 /** Main menu with the custom player-name editor and wallet summary. */
 export class MenuScreen {
@@ -63,5 +64,7 @@ export class MenuScreen {
     setText('menu-best', formatNumber(this.profile.bestScore), this.root);
     setText('wallet', formatNumber(this.wallet.balance), this.root);
     setText('games', formatNumber(this.profile.gamesPlayed), this.root);
+    const p = this.profile.levelProgress;
+    renderXpBar(this.root, 'menu-xp', p, `${formatNumber(p.into)} / ${formatNumber(p.needed)} XP`);
   }
 }

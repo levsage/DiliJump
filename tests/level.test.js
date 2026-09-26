@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { LevelGenerator } from '../src/systems/LevelGenerator.js';
 import { getDifficulty } from '../src/systems/Difficulty.js';
-import { PHYSICS, PLATFORM, PLATFORM_TYPES, VIEW } from '../src/config/constants.js';
+import { PHYSICS, PLATFORM, PLATFORM_TYPES, PLAYFIELD } from '../src/config/constants.js';
 
 const makeWorld = () => ({ platforms: [], coins: [], springs: [], monsters: [], originY: 740 });
 
@@ -40,14 +40,24 @@ describe('LevelGenerator', () => {
     }
   });
 
-  it('keeps platforms within the screen', () => {
-    const world = makeWorld();
-    const gen = new LevelGenerator(world, { seed: 5 });
-    gen.init(740);
-    gen.generateUntil(-20000, 0);
-    for (const p of world.platforms) {
-      expect(p.x).toBeGreaterThanOrEqual(0);
-      expect(p.x + p.w).toBeLessThanOrEqual(VIEW.WIDTH);
+  it('keeps platforms, coins and monsters between the side walls', () => {
+    for (const seed of [5, 6, 7]) {
+      const world = makeWorld();
+      const gen = new LevelGenerator(world, { seed });
+      gen.init(740);
+      gen.generateUntil(-40000, 0);
+      for (const p of world.platforms) {
+        expect(p.x).toBeGreaterThanOrEqual(PLAYFIELD.LEFT);
+        expect(p.x + p.w).toBeLessThanOrEqual(PLAYFIELD.RIGHT);
+      }
+      for (const c of world.coins) {
+        expect(c.x).toBeGreaterThan(PLAYFIELD.LEFT);
+        expect(c.x).toBeLessThan(PLAYFIELD.RIGHT);
+      }
+      for (const m of world.monsters) {
+        expect(m.x - m.w / 2).toBeGreaterThanOrEqual(PLAYFIELD.LEFT);
+        expect(m.x + m.w / 2).toBeLessThanOrEqual(PLAYFIELD.RIGHT);
+      }
     }
   });
 

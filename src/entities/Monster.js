@@ -1,4 +1,4 @@
-import { MONSTER } from '../config/constants.js';
+import { MONSTER, PLAYFIELD } from '../config/constants.js';
 
 /** Hovering "glitch bug" enemy. Stomp it from above or shoot it. */
 export class Monster {
@@ -28,11 +28,13 @@ export class Monster {
     this.alive = false;
   }
 
-  update(dt, worldWidth) {
+  /** @param {{ LEFT: number, RIGHT: number }} bounds monsters patrol between the walls */
+  update(dt, bounds = PLAYFIELD) {
     this.t += dt;
     if (this.alive) {
       this.x += this.vx * dt;
-      if (this.x < this.w / 2 || this.x > worldWidth - this.w / 2) this.vx *= -1;
+      if (this.x < bounds.LEFT + this.w / 2) this.vx = Math.abs(this.vx);
+      else if (this.x > bounds.RIGHT - this.w / 2) this.vx = -Math.abs(this.vx);
       this.y = this.baseY + Math.sin(this.t * 3) * 8;
     } else {
       this.deathT += dt;

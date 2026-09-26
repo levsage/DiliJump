@@ -18,6 +18,28 @@ export const VIEW = Object.freeze({
   MAX_DPR: 2,
 });
 
+/**
+ * Solid side walls: the mascot can't leave the playfield through either side
+ * (no screen wrap-around). Everything else (platforms, monsters, coins) lives
+ * between the walls too.
+ */
+export const WALL = Object.freeze({
+  WIDTH: 16,
+  /** How far gloves / cape may tuck behind a wall (the body itself never does). */
+  PLAYER_OVERLAP: 6,
+  /** Hitting a wall faster than this gives a little bump (dust, glow, sound). */
+  BUMP_SPEED: 200,
+  /** Seconds the wall glow lasts after a bump. */
+  FLASH_TIME: 0.35,
+});
+
+/** Horizontal bounds of the playable area between the walls. */
+export const PLAYFIELD = Object.freeze({
+  LEFT: WALL.WIDTH,
+  RIGHT: VIEW.WIDTH - WALL.WIDTH,
+  WIDTH: VIEW.WIDTH - WALL.WIDTH * 2,
+});
+
 export const PHYSICS = Object.freeze({
   GRAVITY: 2150,
   JUMP_VELOCITY: -1010,
@@ -43,10 +65,8 @@ export const PLAYER = Object.freeze({
 
 /** Mascot + spring animation timing (see src/entities/animation.js). */
 export const ANIMATION = Object.freeze({
-  /** Each of the 4 landing/push-off frames of the 12-frame jump. */
-  LAND_FRAME_TIME: 0.035,
-  /** Falling faster than this shows the "ready to land" frame. */
-  FALL_READY_SPEED: 560,
+  /** How long the squat frame shows after each bounce (3-frame jump). */
+  SQUAT_TIME: 0.1,
   SPRING: {
     CHARGE_TIME: 0.05,
     BLAST_TIME: 0.12,
@@ -68,6 +88,17 @@ export const ANIMATION = Object.freeze({
     WOBBLE_HZ: 3.6,
     DAMPING: 4.2,
   },
+});
+
+/**
+ * Player level: every point you score (all runs added together) is XP.
+ * Reaching level L needs BASE_XP·(L−1) + STEP_XP·(L−1)(L−2)/2 total XP, so each
+ * level costs STEP_XP more than the one before (1 000, 1 500, 2 000, …).
+ * Must match public.player_level_xp() in supabase/migrations/*_player_levels.sql.
+ */
+export const LEVELS = Object.freeze({
+  BASE_XP: 1000,
+  STEP_XP: 500,
 });
 
 export const MUSIC = Object.freeze({

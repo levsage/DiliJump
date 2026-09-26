@@ -1,18 +1,18 @@
 {
   "jump": {
-    "file": "jump-sheet.webp",
-    "cell": [208, 314],
-    "cols": 6,
-    "count": 12,
+    "file": "jump-sheet.ad658bf5.webp",
+    "cell": [165, 244],
+    "cols": 3,
+    "count": 3,
     "anchor": "bottom-center",
-    "refHeight": 240
+    "refHeight": 240.0
   },
   "spring": {
-    "file": "spring-sheet.webp",
+    "file": "spring-sheet.fabd9286.webp",
     "cell": [209, 239],
     "cols": 6,
     "count": 8,
     "anchor": "bottom-center",
-    "refHeight": 240
+    "refHeight": 240.0
   }
 }
