@@ -14,7 +14,7 @@ beforeAll(async () => {
 });
 afterEach(() => vi.useRealTimers());
 
-function makeGame() {
+function makeGame({ leaderboard } = {}) {
   const storage = new Storage(new MemoryBackend(), 'test:');
   const audio = new Proxy({}, { get: () => () => {} }); // every sound is a no-op
   const game = new Game({
@@ -24,7 +24,7 @@ function makeGame() {
     audio,
     profile: new ProfileService(storage),
     wallet: new WalletService(storage),
-    leaderboard: new LocalLeaderboard(storage),
+    leaderboard: leaderboard ?? new LocalLeaderboard(storage),
   });
   game.profile.setName('Tester');
   return game;
@@ -81,5 +81,47 @@ describe('Game run end (death → game over)', () => {
     expect(game.lastResult).toMatchObject({ prevLevel: 1, level: 3, levelUp: true });
     await vi.runAllTimersAsync();
     expect(game.profile.totalScore).toBe(2600);
+  });
+
+  it('after a run, best + level follow the database (e.g. board reset mid-session)', async () => {
+    vi.useFakeTimers();
+    const server = {
+      mode: 'online',
+      unsyncedRuns: () => [],
+      submit: async ({ score }) => ({
+        rank: 1,
+        isBest: true,
+        bestScore: score,
+        totalScore: score,
+        level: 1,
+        online: true,
+      }),
+    };
+    const game = makeGame({ leaderboard: server });
+    game.profile.recordRun(5000); // played before the admin reset the board
+    game.start();
+    Object.defineProperty(game.world, 'totalScore', { get: () => 157, configurable: true });
+    game.finishRun();
+    await vi.runAllTimersAsync();
+    expect(game.profile.bestScore).toBe(157);
+    expect(game.profile.totalScore).toBe(157);
+    expect(game.lastResult).toMatchObject({ isBest: true, level: 1 });
+  });
+
+  it('offline: the local numbers stand until the database confirms', async () => {
+    vi.useFakeTimers();
+    const offline = {
+      mode: 'online',
+      unsyncedRuns: () => [{ score: 300 }],
+      submit: async () => ({ rank: 0, isBest: false, bestScore: 300, online: false, queued: true }),
+    };
+    const game = makeGame({ leaderboard: offline });
+    game.profile.recordRun(5000);
+    game.start();
+    Object.defineProperty(game.world, 'totalScore', { get: () => 300, configurable: true });
+    game.finishRun();
+    await vi.runAllTimersAsync();
+    expect(game.profile.bestScore).toBe(5000);
+    expect(game.profile.totalScore).toBe(5300);
   });
 });

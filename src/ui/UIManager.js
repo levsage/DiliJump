@@ -36,7 +36,11 @@ export class UIManager {
       },
     });
     this.gameOver = new GameOverScreen({ profile, wallet });
-    this.board = new LeaderboardScreen({ leaderboard, profile });
+    this.board = new LeaderboardScreen({
+      leaderboard,
+      profile,
+      onProfileSynced: () => this.onProfileSynced(),
+    });
 
     this.hud.setMuted(settings.muted);
     this.hud.setMusic(settings.music);
@@ -51,13 +55,19 @@ export class UIManager {
       this.onState(this.game.state);
     });
     events.on(EVENTS.FATAL, () => this.showFatal());
-    events.on(EVENTS.PROFILE_SYNCED, () => {
-      this.hud.refreshProfile();
-      if (game.state === GAME_STATES.MENU) this.menu.refresh();
-    });
+    events.on(EVENTS.PROFILE_SYNCED, () => this.onProfileSynced());
 
     const touch = window.matchMedia('(pointer: coarse)').matches;
     document.body.classList.toggle('is-touch', touch);
+  }
+
+  /** Best score / level changed to match the database: redraw what shows them. */
+  onProfileSynced() {
+    this.hud.refreshProfile();
+    if (this.game.state === GAME_STATES.MENU) this.menu.refresh();
+    if (this.game.state === GAME_STATES.GAME_OVER && this.game.lastResult) {
+      this.gameOver.populate(this.game.lastResult);
+    }
   }
 
   /** Unrecoverable runtime error: friendly message + reload button. */

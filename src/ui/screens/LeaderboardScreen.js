@@ -1,5 +1,6 @@
 import { $, bound } from '../dom.js';
 import { levelLabel } from '../levelView.js';
+import { ProfileService } from '../../services/ProfileService.js';
 import { escapeHtml, formatDate, formatNumber } from '../../utils/format.js';
 
 const MEDALS = ['🥇', '🥈', '🥉'];
@@ -18,10 +19,11 @@ const ERROR_RETRY_MS = 3000;
  * Supabase it listens to realtime changes while open and refreshes itself.
  */
 export class LeaderboardScreen {
-  constructor({ leaderboard, profile }) {
+  constructor({ leaderboard, profile, onProfileSynced = () => {} }) {
     this.root = $('#screen-leaderboard');
     this.leaderboard = leaderboard;
     this.profile = profile;
+    this.onProfileSynced = onProfileSynced;
     this.list = bound('leaderboard', this.root)[0];
     this.empty = bound('leaderboard-empty', this.root)[0];
     this.me = bound('leaderboard-me', this.root)[0];
@@ -88,6 +90,16 @@ export class LeaderboardScreen {
       ]);
       if (id !== this.requestId) return; // a newer refresh won
       this.render(entries, mine);
+      // keep the on-screen best / level in line with the board (e.g. after a reset)
+      if (
+        this.leaderboard.mode !== 'local' &&
+        this.profile.syncWithServer(
+          ProfileService.statsFromEntry(mine),
+          this.leaderboard.unsyncedRuns(),
+        )
+      ) {
+        this.onProfileSynced();
+      }
       this.dataOk = true;
       this.updateStatus();
     } catch (err) {

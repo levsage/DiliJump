@@ -34,8 +34,11 @@ async function bootstrap() {
     .init()
     .then(() => leaderboard.myEntry())
     .then((me) => {
-      // adopt the lifetime XP stored online (includes runs from before v3.0)
-      if (me && profile.syncTotal(me.totalScore)) events.emit(EVENTS.PROFILE_SYNCED);
+      if (leaderboard.mode === 'local') return;
+      // best + XP follow the database (also after a leaderboard reset)
+      if (profile.syncWithServer(ProfileService.statsFromEntry(me), leaderboard.unsyncedRuns())) {
+        events.emit(EVENTS.PROFILE_SYNCED);
+      }
     })
     .catch((err) => console.warn('[leaderboard] offline:', err.message));
   const audio = new AudioManager({ muted: settings.muted, music: settings.music });

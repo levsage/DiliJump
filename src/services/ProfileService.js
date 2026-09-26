@@ -48,15 +48,45 @@ export class ProfileService {
   }
 
   /**
-   * Adopt the lifetime XP stored in the database (it includes the whole run
-   * history). Never lowers the local value. @returns {boolean} changed
+   * Mirror the database, the source of truth for best score and lifetime XP —
+   * up *or down* (e.g. after an admin resets the leaderboard). Runs the
+   * database hasn't received yet (offline queue, submissions in progress) are
+   * added on top, so nothing played on this device is lost.
+   *
+   * @param {{ bestScore: number, totalScore?: number|null }} server
+   *   `totalScore` null/undefined = the database doesn't track XP yet → keep local
+   * @param {{ score: number }[]} [unsynced]
+   * @returns {boolean} whether anything changed
    */
-  syncTotal(serverTotal) {
-    const t = Number(serverTotal);
-    if (!Number.isFinite(t) || t <= this.data.totalScore) return false;
-    this.data.totalScore = t;
-    this.save();
-    return true;
+  /** The player's own leaderboard row → server stats (no row = nothing on the board). */
+  static statsFromEntry(entry) {
+    return entry
+      ? { bestScore: entry.score, totalScore: entry.totalScore }
+      : { bestScore: 0, totalScore: 0 };
+  }
+
+  syncWithServer({ bestScore, totalScore }, unsynced = []) {
+    const scores = unsynced.map((r) => Math.max(0, Math.floor(Number(r?.score) || 0)));
+    const serverBest = Math.max(0, Math.floor(Number(bestScore) || 0));
+    const unsyncedSum = scores.reduce((a, b) => a + b, 0);
+    const best = Math.max(serverBest, ...scores);
+    const bestDropped = best < this.data.bestScore; // the board was reset
+    let changed = false;
+    if (best !== this.data.bestScore) {
+      this.data.bestScore = best;
+      changed = true;
+    }
+    const serverTotal = totalScore === null || totalScore === undefined ? NaN : Number(totalScore);
+    let total = this.data.totalScore;
+    if (Number.isFinite(serverTotal)) total = Math.max(0, serverTotal) + unsyncedSum;
+    // database without XP tracking + a reset: fall back to the safe lower bound
+    else if (bestDropped) total = Math.min(total, serverBest + unsyncedSum);
+    if (total !== this.data.totalScore) {
+      this.data.totalScore = total;
+      changed = true;
+    }
+    if (changed) this.save();
+    return changed;
   }
 
   /** @returns {{ ok: boolean, name?: string, error?: string }} */

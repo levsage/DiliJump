@@ -147,6 +147,11 @@ export class LocalLeaderboard {
     }
   }
 
+  /** The offline board is always up to date. */
+  unsyncedRuns() {
+    return [];
+  }
+
   setCurrentName(name) {
     this.currentName = name;
   }

@@ -92,6 +92,13 @@ npm run dev
 - **In the game:** play a run, then open 🏆 Leaderboard. The badge should say **LIVE**.
 - **Automated:** Actions → **Supabase health check** → Run workflow (uses the GitHub secrets), or `npm run check:supabase` locally.
 
+## Resetting the leaderboard
+
+Run [`supabase/snippets/reset_leaderboard.sql`](../supabase/snippets/reset_leaderboard.sql).
+Each player's **Best** and **level** on their own device follow the board
+automatically (v3.0.1+): they go back to 0 the next time the game or the
+leaderboard is opened. Coins (DLI wallet) and games played are kept.
+
 ## Moderation
 
 **Table Editor → players**: delete a row to remove a player (their runs and

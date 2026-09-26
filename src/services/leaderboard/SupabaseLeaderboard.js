@@ -41,6 +41,8 @@ export class SupabaseLeaderboard {
     this.readyPromise = null;
     this.retryTimer = null;
     this.lastError = null;
+    /** Runs currently being sent (not in the pending queue, not yet in the DB). */
+    this.inFlight = new Set();
   }
 
   get playerId() {
@@ -87,6 +89,7 @@ export class SupabaseLeaderboard {
    */
   async submit({ name, score, coins = 0, height = 0, durationMs = 0 }) {
     const run = { name, score, coins, height, durationMs: Math.round(durationMs) };
+    this.inFlight.add(run);
     try {
       const rows = await this.rpc('submit_score', {
         ...this.credentials(),
@@ -120,7 +123,18 @@ export class SupabaseLeaderboard {
         queued: !rejected,
         error: err?.message ?? String(err),
       };
+    } finally {
+      this.inFlight.delete(run);
     }
+  }
+
+  /**
+   * Runs this browser played that the database doesn't have yet (offline
+   * queue + submissions in progress). The server's numbers plus these are the
+   * player's true stats.
+   */
+  unsyncedRuns() {
+    return [...this.pending(), ...this.inFlight];
   }
 
   /** Validation / credential errors from the database are final — don't retry. */
