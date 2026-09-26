@@ -6,6 +6,12 @@ and the project uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [3.0.1] - 2026-09-26
+
+### Fixed
+
+- **Resetting the leaderboard now resets everyone's on-screen Best score and level too.** The database is the source of truth: the game mirrors it (up or down) at start-up, after each run and whenever the leaderboard is shown. Runs the database hasn't received yet (offline or still sending) are counted on top, so nothing played is lost. Coins and games played are kept.
+
 ## [3.0.0] - 2026-09-26
 
 A big gameplay update: player levels for everyone on the leaderboard, solid side walls and a snappier 3-pose jump. (Includes everything tested on `beta` as 2.1.0 and 2.2.0.)
@@ -134,7 +140,8 @@ The first production release: everything from the unreleased 1.3 line (new anima
 - Keyboard and touch controls, responsive layout, PWA manifest.
 - Tooling: Vite, ESLint, Prettier, Vitest, GitHub Actions CI and GitHub Pages deploy.
 
-[Unreleased]: https://github.com/levsage/DiliJump/compare/v3.0.0...HEAD
+[Unreleased]: https://github.com/levsage/DiliJump/compare/v3.0.1...HEAD
+[3.0.1]: https://github.com/levsage/DiliJump/compare/v3.0.0...v3.0.1
 [3.0.0]: https://github.com/levsage/DiliJump/compare/v2.0.0...v3.0.0
 [2.0.0]: https://github.com/levsage/DiliJump/compare/v1.2.1...v2.0.0
 [1.2.1]: https://github.com/levsage/DiliJump/compare/v1.2.0...v1.2.1

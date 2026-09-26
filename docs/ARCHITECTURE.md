@@ -151,9 +151,14 @@ XP to reach level L = 1000·(L−1) + 500·(L−1)(L−2)/2
 | ----- | ----- | ----- | ----- | ----- | ------ | ------- |
 | XP    | 1 000 | 2 500 | 4 500 | 7 000 | 27 000 | 104 500 |
 
-The game keeps a local total (updated instantly after each run) and adopts the
-database total whenever it is higher (after each submit and at start-up), so
-runs from before v3.0 count too. Shown as the menu XP bar, the HUD badge, the
+**The database is the source of truth** for the best score and XP. The game
+updates its local copy instantly after each run, then mirrors the database —
+up _or down_ — at start-up, after each accepted run and whenever the
+leaderboard is shown (`ProfileService.syncWithServer`). Runs the database
+hasn't received yet (offline queue + submissions in progress,
+`leaderboard.unsyncedRuns()`) are added on top, so nothing is lost. So runs
+from before v3.0 count, and a leaderboard reset also resets every player's
+Best and level on their device. Shown as the menu XP bar, the HUD badge, the
 game-over "+XP / LEVEL UP!" panel and the **Lv** pill on every leaderboard row.
 
 ## Production build

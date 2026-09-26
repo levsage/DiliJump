@@ -166,8 +166,11 @@ export class Game {
         durationMs: this.world.elapsed * 1000,
       })
       .then((res) => {
-        // the database total includes the whole run history — adopt it
-        if (Number.isFinite(res.totalScore)) this.profile.syncTotal(res.totalScore);
+        // the database is the source of truth (includes the whole run history,
+        // and follows leaderboard resets); runs still queued are kept on top
+        if (res.online) {
+          this.profile.syncWithServer(res, this.leaderboard.unsyncedRuns());
+        }
         celebrateLevel();
         Object.assign(this.lastResult, {
           ...res,

@@ -310,6 +310,33 @@ describe('SupabaseLeaderboard (database only, no login)', () => {
     expect(scores).toEqual([...scores].sort((x, y) => x - y)); // order preserved
   });
 
+  it('reports queued and in-progress runs as not yet in the database', async () => {
+    const waiting = [];
+    const client = fakeClient({
+      rpcImpl: (fn, args) =>
+        new Promise((r) =>
+          waiting.push(() =>
+            r({ data: [{ best_score: args.p_score, is_best: true, rank: 1 }], error: null }),
+          ),
+        ),
+    });
+    const lb = makeLb(client);
+    lb.scheduleRetry = () => {};
+    lb.queue({ name: 'A', score: 30 });
+    const sending = lb.submit({ name: 'A', score: 50 });
+    const scores = () =>
+      lb
+        .unsyncedRuns()
+        .map((r) => r.score)
+        .sort((x, y) => x - y);
+    expect(scores()).toEqual([30, 50]); // one queued, one being sent
+    await vi.waitFor(() => expect(waiting.length).toBeGreaterThan(0));
+    while (waiting.length) waiting.shift()();
+    await sending;
+    expect(lb.unsyncedRuns().map((r) => r.score)).not.toContain(50);
+    expect(new LocalLeaderboard(storage).unsyncedRuns()).toEqual([]);
+  });
+
   it('does not retry runs the database rejected', async () => {
     const client = fakeClient({
       rpcImpl: async () => ({ data: null, error: { code: '22023', message: 'Implausible score' } }),

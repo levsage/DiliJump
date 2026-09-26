@@ -1,6 +1,6 @@
 {
   "name": "dilijump",
-  "version": "3.0.0",
+  "version": "3.0.1",
   "description": "DiliJump — a Doodle Jump–style 2D web game starring the Dlicom mascot. Jump, collect DLI coins, climb the leaderboard.",
   "private": true,
   "type": "module",
