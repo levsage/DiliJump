@@ -8,7 +8,7 @@ const MAX_PENDING = 30;
 /** Gap between flushing queued runs (the database allows one run per 3 s). */
 const FLUSH_GAP_MS = 3300;
 
-/** Number or null (columns missing on databases from before v2.2). */
+/** Number or null (columns missing on databases from before v3.0). */
 const numOrNull = (v) => (v === null || v === undefined ? null : Number(v));
 
 /**

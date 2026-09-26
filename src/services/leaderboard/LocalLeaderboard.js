@@ -53,7 +53,7 @@ export class LocalLeaderboard {
     return false;
   }
 
-  /** Lifetime XP of an entry (entries from before v2.2 count their best). */
+  /** Lifetime XP of an entry (entries from before v3.0 count their best). */
   static total(e) {
     return Number.isFinite(e?.total) ? e.total : (e?.score ?? 0);
   }

@@ -69,7 +69,7 @@ twice before failing the boot.
 
 Normal movement plays **generated animation sheets**; single generated poses
 are short overrides. Sheets are atlases made by `tools/process_sheets.py`
-(`public/assets/sprites/*-sheet.webp` + `src/config/spriteSheets.json`).
+(`public/assets/sprites/*-sheet.<hash>.webp` + `src/config/spriteSheets.json`).
 
 Frames are chosen from the **physics state** (vertical speed + time since the
 last bounce) in `src/entities/animation.js`, so the animation always matches
@@ -153,7 +153,7 @@ XP to reach level L = 1000·(L−1) + 500·(L−1)(L−2)/2
 
 The game keeps a local total (updated instantly after each run) and adopts the
 database total whenever it is higher (after each submit and at start-up), so
-runs from before v2.2 count too. Shown as the menu XP bar, the HUD badge, the
+runs from before v3.0 count too. Shown as the menu XP bar, the HUD badge, the
 game-over "+XP / LEVEL UP!" panel and the **Lv** pill on every leaderboard row.
 
 ## Production build

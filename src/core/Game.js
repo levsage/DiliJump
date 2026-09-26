@@ -84,7 +84,15 @@ export class Game {
     this.loop.start();
   }
 
+  /** Cancel a pending "show game over" from a run that just ended. */
+  cancelRunEnd() {
+    clearTimeout(this.endTimer);
+    this.endTimer = null;
+    this.ending = false;
+  }
+
   start() {
+    this.cancelRunEnd();
     this.audio.unlock();
     this.input.reset();
     this.world.reset();
@@ -95,7 +103,8 @@ export class Game {
   }
 
   pause() {
-    if (this.state !== GAME_STATES.PLAYING) return;
+    // not during the short death animation: game over is already on its way
+    if (this.state !== GAME_STATES.PLAYING || this.ending) return;
     this.setState(GAME_STATES.PAUSED);
   }
 
@@ -111,12 +120,14 @@ export class Game {
   }
 
   quitToMenu() {
+    this.cancelRunEnd();
     this.world.reset();
     this.setState(GAME_STATES.MENU);
   }
 
   finishRun() {
-    if (this.state !== GAME_STATES.PLAYING) return;
+    if (this.state !== GAME_STATES.PLAYING || this.ending) return;
+    this.ending = true;
     const score = this.world.totalScore;
     const height = Math.floor(this.world.altitude);
     const coins = this.wallet.commitRun();
@@ -140,7 +151,11 @@ export class Game {
 
     // Show the scoreboard right away; the leaderboard rank arrives async.
     this.lastResult = { score, coins, isBest, height, rank: null, pending: true, ...levelInfo() };
-    setTimeout(() => this.setState(GAME_STATES.GAME_OVER), 650);
+    this.endTimer = setTimeout(() => {
+      this.endTimer = null;
+      this.ending = false;
+      if (this.state === GAME_STATES.PLAYING) this.setState(GAME_STATES.GAME_OVER);
+    }, 650);
 
     this.leaderboard
       .submit({

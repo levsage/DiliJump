@@ -41,10 +41,10 @@ need to set up sign-in providers.
 
 1. [`supabase/migrations/20260923120000_live_leaderboard.sql`](../supabase/migrations/20260923120000_live_leaderboard.sql): tables, RLS, leaderboard, realtime
 2. [`supabase/migrations/20260923140000_no_login_players.sql`](../supabase/migrations/20260923140000_no_login_players.sql): no-login identities and the `submit_score` / `rename_player` / `get_player_rank` functions
-3. [`supabase/migrations/20260925120000_player_levels.sql`](../supabase/migrations/20260925120000_player_levels.sql): **player levels** (v2.2) — `players.total_score` (lifetime XP, back-filled from the run history), `player_level()`, and `level` / `total_score` on `submit_score`, `get_leaderboard` and `get_player_rank`
+3. [`supabase/migrations/20260925120000_player_levels.sql`](../supabase/migrations/20260925120000_player_levels.sql): **player levels** (v3.0) — `players.total_score` (lifetime XP, back-filled from the run history), `player_level()`, and `level` / `total_score` on `submit_score`, `get_leaderboard` and `get_player_rank`
 
-> **Upgrading to v2.2:** run file 3 only. It's backward compatible: older game
-> versions keep working, and the v2.2 game works before it's applied (levels
+> **Upgrading to v3.0:** run file 3 only. It's backward compatible: older game
+> versions keep working, and the v3.0 game works before it's applied (levels
 > then come from each browser only and aren't shown on the global board).
 
 > **Upgrading from v1.1** (anonymous sign-ins): run file 2. Then, once v1.2 is

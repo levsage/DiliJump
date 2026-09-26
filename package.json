@@ -1,6 +1,6 @@
 {
   "name": "dilijump",
-  "version": "2.2.0",
+  "version": "3.0.0",
   "description": "DiliJump — a Doodle Jump–style 2D web game starring the Dlicom mascot. Jump, collect DLI coins, climb the leaderboard.",
   "private": true,
   "type": "module",
@@ -52,7 +52,7 @@
     "globals": "^17.12.0",
     "prettier": "^3.9.8",
     "vite": "^6.4.3",
-    "vitest": "^3.2.7"
+    "vitest": "^4.1.11"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.109.0"

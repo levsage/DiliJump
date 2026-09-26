@@ -1,9 +1,10 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { readFileSync } from 'node:fs';
+import { createHash } from 'node:crypto';
 import { GameLoop, MAX_FRAME_ERRORS } from '../src/core/GameLoop.js';
 import { AssetLoader } from '../src/core/AssetLoader.js';
 import { CSP_HEADER, CSP_META } from '../tools/vite/csp.js';
-import { PLAYER_POSES, ASSETS } from '../src/config/assets.js';
+import { PLAYER_POSES, ASSETS, SPRITE_SHEETS } from '../src/config/assets.js';
 
 describe('Content Security Policy', () => {
   const vercel = JSON.parse(readFileSync(new URL('../vercel.json', import.meta.url), 'utf8'));
@@ -36,6 +37,19 @@ describe('shipped sprites', () => {
       const file = new URL(`../public/assets/sprites/${pose}.webp`, import.meta.url);
       expect(readFileSync(file).subarray(8, 12).toString()).toBe('WEBP');
       expect(meta.frames[pose].file).toBe(`${pose}.webp`);
+    }
+  });
+});
+
+describe('sprite sheet cache-busting', () => {
+  it('sheet file names carry the hash of their content', () => {
+    for (const [name, sheet] of Object.entries(SPRITE_SHEETS)) {
+      const m = sheet.file.match(new RegExp(`^${name}-sheet\\.([0-9a-f]{8})\\.webp$`));
+      expect(m, sheet.file).not.toBeNull();
+      const bytes = readFileSync(
+        new URL(`../public/assets/sprites/${sheet.file}`, import.meta.url),
+      );
+      expect(createHash('sha256').update(bytes).digest('hex').slice(0, 8)).toBe(m[1]);
     }
   });
 });

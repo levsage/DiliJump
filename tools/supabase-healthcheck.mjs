@@ -140,7 +140,7 @@ const isMissingFn = (e) =>
   } else fail('migration', `get_leaderboard() error: ${error.message}`);
 }
 
-// Player levels (v2.2): same formula as src/systems/PlayerLevel.js
+// Player levels (v3.0): same formula as src/systems/PlayerLevel.js
 {
   const fix = 'Run supabase/migrations/20260925120000_player_levels.sql in the SQL Editor';
   const { data, error } = await supabase.rpc('player_level', { p_total: 2500 });

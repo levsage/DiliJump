@@ -27,7 +27,7 @@ Animation sheets:
 
 ```bash
 npm run sprites:sheets
-# = python3 tools/process_sheets.py  → public/assets/sprites/*-sheet.webp + src/config/spriteSheets.json
+# = python3 tools/process_sheets.py  → public/assets/sprites/*-sheet.<hash>.webp + src/config/spriteSheets.json
 ```
 
 It finds each pose on the sheet, keys out the magenta, scales the sheet so the

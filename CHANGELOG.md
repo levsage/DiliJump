@@ -6,36 +6,37 @@ and the project uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
-## [2.2.0] - 2026-09-25
+## [3.0.0] - 2026-09-26
+
+A big gameplay update: player levels for everyone on the leaderboard, solid side walls and a snappier 3-pose jump. (Includes everything tested on `beta` as 2.1.0 and 2.2.0.)
+
+### ⚠️ Breaking / upgrade notes
+
+- **Database migration:** run [`supabase/migrations/20260925120000_player_levels.sql`](supabase/migrations/20260925120000_player_levels.sql) once in the Supabase SQL Editor to show levels on the global leaderboard. It's safe to run again and backward compatible: the game works before it's applied (levels are then per device only), and older game versions keep working after it.
+- **No more screen wrap-around:** the playfield now has solid walls on both sides.
 
 ### Added
 
-- **Player levels.** Every point you score is XP and all your runs add up — even the ones that don't beat your best. The level keeps rising (each level costs 500 XP more than the last: Lv 2 at 1 000, Lv 3 at 2 500, Lv 5 at 7 000, Lv 10 at 27 000).
+- **Player levels.** Every point you score is XP and all your runs add up — even the ones that don't beat your best. The level keeps rising; each level costs 500 XP more than the last (Lv 2 at 1 000, Lv 3 at 2 500, Lv 5 at 7 000, Lv 10 at 27 000).
   - **Lv badge next to every name on the leaderboard**, visible to everyone.
   - Level + XP bar on the main menu, level badge in the HUD name bar.
   - Game over shows "+score XP" and a **LEVEL UP!** banner with a jingle.
   - Existing players keep everything they've already scored: their XP is back-filled from their whole run history.
-- Database migration `20260925120000_player_levels.sql` (`players.total_score`, `player_level()`; `submit_score`, `get_leaderboard` and `get_player_rank` return `total_score` + `level`). Backward compatible in both directions. SQL tests in `supabase/tests/levels_test.sql`; the health check verifies it.
+  - Database: `players.total_score`, `player_level()`; `submit_score`, `get_leaderboard` and `get_player_rank` also return `total_score` + `level`. SQL tests in `supabase/tests/levels_test.sql`; `npm run check:supabase` verifies the migration.
+- **Solid side walls.** Glowing walls on both sides of the playfield: the mascot bumps off them with a dust puff, a glow and a soft thud. Moving platforms and monsters bounce off the walls, and levels are generated between them.
 
 ### Changed
 
-- **3-pose jump** (was 30 frames): squat → rising → falling, picked from the generated art. The jump sheet shrank from 267 KB to 26 KB.
+- **3-pose jump:** squat → rising → falling, picked from newly generated art (the sheet is 5× smaller than v2.0.0's).
 - Offline runs are all kept and synced (up to 30) instead of only the best one, so no XP is lost.
+- Sprite sheets have content-hashed file names, so new art shows up immediately instead of after the week-long asset cache.
+- `tools/process_sheets.py` can slice sheets by grid (even where neighbouring poses touch) and pick a subset of frames.
+- Dev tooling: Vitest 4 (clears a moderate advisory in the test runner; `npm audit` reports 0 vulnerabilities).
 
-## [2.1.0] - 2026-09-25
+### Fixed
 
-### Added
-
-- **Solid side walls.** Glowing walls on both sides of the playfield: the mascot can no longer slip off one edge and reappear on the other. Bumping into a wall gives a little dust puff, a glow and a soft thud. Moving platforms and monsters bounce off the walls, and levels are generated between them.
-
-### Changed
-
-- **30-frame jump animation** (was 12): a newly generated, smoother cycle — touch-down, deep squat, push-off, rising, a joyful apex, floating hang, cape billowing up while falling and legs reaching for the next platform. Every frame is shown on every normal jump, driven by the real jump physics.
-- `tools/process_sheets.py` can slice sheets by grid, even where neighbouring poses touch.
-
-### Removed
-
-- Screen wrap-around (replaced by the walls).
+- Pausing or quitting during the short death animation could make the game-over screen pop up later over the menu — or over a new run started right away. The death animation can no longer be paused, and a new run or quitting cancels the pending game over.
+- Flaky end-to-end test when the randomly generated level made the test mascot fall.
 
 ## [2.0.0] - 2026-09-24
 
@@ -133,9 +134,8 @@ The first production release: everything from the unreleased 1.3 line (new anima
 - Keyboard and touch controls, responsive layout, PWA manifest.
 - Tooling: Vite, ESLint, Prettier, Vitest, GitHub Actions CI and GitHub Pages deploy.
 
-[Unreleased]: https://github.com/levsage/DiliJump/compare/v2.2.0...HEAD
-[2.2.0]: https://github.com/levsage/DiliJump/compare/v2.1.0...v2.2.0
-[2.1.0]: https://github.com/levsage/DiliJump/compare/v2.0.0...v2.1.0
+[Unreleased]: https://github.com/levsage/DiliJump/compare/v3.0.0...HEAD
+[3.0.0]: https://github.com/levsage/DiliJump/compare/v2.0.0...v3.0.0
 [2.0.0]: https://github.com/levsage/DiliJump/compare/v1.2.1...v2.0.0
 [1.2.1]: https://github.com/levsage/DiliJump/compare/v1.2.0...v1.2.1
 [1.2.0]: https://github.com/levsage/DiliJump/compare/v1.1.1...v1.2.0

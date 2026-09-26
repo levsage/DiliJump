@@ -15,7 +15,7 @@ export class ProfileService {
       gamesPlayed: 0,
       ...storage.get('profile', {}),
     };
-    // profiles from before v2.2 have no XP yet: their best is a safe lower bound
+    // profiles from before v3.0 have no XP yet: their best is a safe lower bound
     if (!Number.isFinite(this.data.totalScore)) this.data.totalScore = this.data.bestScore;
   }
 

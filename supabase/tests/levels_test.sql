@@ -1,5 +1,5 @@
 -- =============================================================================
--- Tests for player levels (v2.2): lifetime XP, level formula, back-fill.
+-- Tests for player levels (v3.0): lifetime XP, level formula, back-fill.
 -- Run with `npm run test:db` (applies shim + all migrations first).
 -- The formula fixture below is shared with tests/playerLevel.test.js.
 -- =============================================================================
@@ -92,7 +92,7 @@ do $$ begin
 end $$;
 
 -- ---------------------------------------------------------------------------
--- 4. Back-fill: players from before v2.2 get their whole run history
+-- 4. Back-fill: players from before v3.0 get their whole run history
 -- ---------------------------------------------------------------------------
 insert into public.players (id, name, best_score, best_at, games_played, total_score)
 values ('00000000-0000-4000-8000-0000000000e1', 'Eve', 800, now(), 3, 0),

@@ -8,8 +8,12 @@ size as in public/assets/sprites/*.png.
 
 Usage: npm run sprites:sheets   (= python3 tools/process_sheets.py)
 
-Outputs public/assets/sprites/<name>-sheet.webp + src/config/spriteSheets.json
+Outputs public/assets/sprites/<name>-sheet.<hash>.webp + src/config/spriteSheets.json
+(the content hash in the file name makes browsers fetch new art immediately,
+even though /assets is cached for a week).
 """
+import glob
+import hashlib
 import json
 import os
 import sys
@@ -172,10 +176,17 @@ def process(name, cfg):
         oy = (i // cols) * cell_h + cell_h - img.height
         atlas.paste(img, (ox, oy), img)
 
-    out_file = os.path.join(SPRITES, f"{name}-sheet.webp")
-    atlas.save(out_file, "WEBP", quality=WEBP_QUALITY, method=6, alpha_quality=100)
+    tmp_file = os.path.join(SPRITES, f"{name}-sheet.tmp.webp")
+    atlas.save(tmp_file, "WEBP", quality=WEBP_QUALITY, method=6, alpha_quality=100)
+    digest = hashlib.sha256(open(tmp_file, "rb").read()).hexdigest()[:8]
+    file_name = f"{name}-sheet.{digest}.webp"
+    for old in glob.glob(os.path.join(SPRITES, f"{name}-sheet*.webp")):
+        if old != tmp_file:
+            os.remove(old)
+    out_file = os.path.join(SPRITES, file_name)
+    os.replace(tmp_file, out_file)
     info = {
-        "file": f"{name}-sheet.webp",
+        "file": file_name,
         "cell": [cell_w, cell_h],
         "cols": cols,
         "count": len(scaled),

@@ -34,7 +34,7 @@ async function bootstrap() {
     .init()
     .then(() => leaderboard.myEntry())
     .then((me) => {
-      // adopt the lifetime XP stored online (includes runs from before v2.2)
+      // adopt the lifetime XP stored online (includes runs from before v3.0)
       if (me && profile.syncTotal(me.totalScore)) events.emit(EVENTS.PROFILE_SYNCED);
     })
     .catch((err) => console.warn('[leaderboard] offline:', err.message));

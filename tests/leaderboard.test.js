@@ -73,7 +73,7 @@ describe('LocalLeaderboard — one best entry per person', () => {
     expect(top).toMatchObject({ score: 1500, totalScore: 2600, level: 3 });
   });
 
-  it('counts the best score as XP for entries from before v2.2', async () => {
+  it('counts the best score as XP for entries from before v3.0', async () => {
     storage.set('leaderboard', [{ id: 'l', name: 'Old', score: 1200, coins: 0, date: 1 }]);
     const lb = new LocalLeaderboard(storage);
     expect((await lb.top())[0]).toMatchObject({ totalScore: 1200, level: 2 });
@@ -152,7 +152,7 @@ describe('SupabaseLeaderboard (database only, no login)', () => {
       p_height: 5000,
       p_duration_ms: 61235,
     });
-    // database from before v2.2: no level columns → nulls, nothing breaks
+    // database from before v3.0: no level columns → nulls, nothing breaks
     expect(res).toEqual({
       rank: 3,
       isBest: true,
@@ -164,7 +164,7 @@ describe('SupabaseLeaderboard (database only, no login)', () => {
     });
   });
 
-  it('returns lifetime XP and level from submit_score (v2.2 database)', async () => {
+  it('returns lifetime XP and level from submit_score (v3.0 database)', async () => {
     const client = fakeClient({
       rpcImpl: async () => ({
         data: [
@@ -298,7 +298,7 @@ describe('SupabaseLeaderboard (database only, no login)', () => {
     }
   });
 
-  it('migrates the pre-v2.2 single pending run and caps the queue', async () => {
+  it('migrates the pre-v3.0 single pending run and caps the queue', async () => {
     storage.set('leaderboard:pending', { name: 'A', score: 50 });
     const lb = makeLb(fakeClient());
     lb.scheduleRetry = () => {};

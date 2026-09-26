@@ -1,5 +1,5 @@
 -- =============================================================================
--- DiliJump v2.2 — player levels
+-- DiliJump v3.0 — player levels
 --
 -- Every point scored (all runs added together) is XP; the level grows with it
 -- and is shown next to the name on the leaderboard.

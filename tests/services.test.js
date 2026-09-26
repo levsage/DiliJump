@@ -44,7 +44,7 @@ describe('ProfileService', () => {
     expect(new ProfileService(storage).totalScore).toBe(1100); // persisted
   });
 
-  it('starts pre-v2.2 profiles from their best and adopts a higher server total', () => {
+  it('starts pre-v3.0 profiles from their best and adopts a higher server total', () => {
     storage.set('profile', { name: 'Old', bestScore: 900, gamesPlayed: 12 });
     const p = new ProfileService(storage);
     expect(p.totalScore).toBe(900);

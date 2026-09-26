@@ -19,6 +19,22 @@ async function openMenu(page) {
   await expect(page.locator(visible('screen-menu'))).toBeVisible();
 }
 
+/**
+ * Leave a run and return to the menu. Levels are random, so the mascot may
+ * already have fallen: then use the game-over screen instead of pause.
+ */
+async function leaveRunToMenu(page) {
+  if (!(await page.locator(visible('screen-gameover')).isVisible())) {
+    await page.keyboard.press('Escape');
+  }
+  await page
+    .locator(`${visible('screen-pause')}, ${visible('screen-gameover')}`)
+    .locator('[data-action="menu"]')
+    .first()
+    .click();
+  await expect(page.locator(visible('screen-menu'))).toBeVisible();
+}
+
 test('menu loads cleanly with the release version and a CSP', async ({ page }) => {
   const errors = watchErrors(page);
   await openMenu(page);
@@ -47,22 +63,23 @@ test('play → HUD + controls, pause and resume, back to menu', async ({ page })
   await expect(page.locator(visible('controls'))).toBeVisible();
   await expect(page.locator('[data-bind="player-name"]')).toHaveText('E2E Bot');
 
-  // hold ◀ for a moment: the button reacts and the game keeps running
-  const left = page.locator('.ctrl--move[data-dir="-1"]');
-  const box = await left.boundingBox();
-  await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
-  await page.mouse.down();
-  await page.waitForTimeout(250);
-  await page.mouse.up();
-
+  // pause + resume first: without input the mascot bounces in place, so it's alive
   await page.keyboard.press('KeyP');
   await expect(page.locator(visible('screen-pause'))).toBeVisible();
   await page.click(`${visible('screen-pause')} [data-action="resume"]`);
   await expect(page.locator(visible('screen-pause'))).toHaveCount(0);
 
-  await page.keyboard.press('Escape');
-  await page.click(`${visible('screen-pause')} [data-action="menu"]`);
-  await expect(page.locator(visible('screen-menu'))).toBeVisible();
+  // hold ◀: the button lights up while pressed (moving may make the mascot fall)
+  const left = page.locator('.ctrl--move[data-dir="-1"]');
+  const box = await left.boundingBox();
+  await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+  await page.mouse.down();
+  await expect(left).toHaveClass(/is-pressed/);
+  await page.waitForTimeout(150);
+  await page.mouse.up();
+  await expect(left).not.toHaveClass(/is-pressed/);
+
+  await leaveRunToMenu(page);
   expect(errors).toEqual([]);
 });
 
@@ -70,7 +87,7 @@ test('player level: XP bar on the menu, level badge in the HUD and leaderboard',
   page,
 }) => {
   const errors = watchErrors(page);
-  // a player from before v2.2 (no lifetime XP yet) + a board entry with a level
+  // a player from before v3.0 (no lifetime XP yet) + a board entry with a level
   await page.addInitScript(() => {
     if (sessionStorage.getItem('seeded')) return;
     sessionStorage.setItem('seeded', '1');
@@ -92,8 +109,7 @@ test('player level: XP bar on the menu, level badge in the HUD and leaderboard',
 
   await page.click('#screen-menu [data-action="play"]');
   await expect(page.locator('[data-bind="player-level"]')).toHaveText('Lv 3');
-  await page.keyboard.press('p');
-  await page.click('#screen-pause [data-action="menu"]');
+  await leaveRunToMenu(page);
 
   await page.click('#screen-menu [data-action="leaderboard"]');
   const row = page.locator('#screen-leaderboard .lb-row').first();
