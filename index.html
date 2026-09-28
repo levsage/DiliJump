@@ -53,7 +53,7 @@
       <header id="hud" class="hud" hidden>
         <div class="hud__row">
           <div class="namebar" title="Player">
-            <img class="namebar__avatar" src="/assets/sprites/idle.webp" alt="" />
+            <img class="namebar__avatar" alt="" />
             <span class="namebar__name" data-bind="player-name">Player</span>
             <span class="lvl-pill lvl-pill--hud" data-bind="player-level" title="Player level"
               >Lv 1</span
@@ -75,6 +75,18 @@
             <img class="coinbar__icon" src="/assets/brand/dli-coin.svg" alt="DLI" />
             <span class="coinbar__value" data-bind="run-coins">0</span>
             <span class="coinbar__unit">DLI</span>
+          </div>
+        </div>
+        <div class="hud__row hud__row--power">
+          <div class="powerbar" title="Coin magnet" role="status" hidden>
+            <svg class="powerbar__icon" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M5 3v8a7 7 0 0 0 14 0V3" fill="none" stroke="#5a0d18" stroke-width="7" />
+              <path d="M5 3v8a7 7 0 0 0 14 0V3" fill="none" stroke="#e8283f" stroke-width="5" />
+              <path d="M2.5 1h5v4h-5zM16.5 1h5v4h-5z" fill="#e6edf5" />
+            </svg>
+            <span class="powerbar__label">MAGNET</span>
+            <span class="powerbar__track"><span class="powerbar__fill"></span></span>
+            <b class="powerbar__time" data-bind="magnet-time">8s</b>
           </div>
         </div>
       </header>
@@ -158,7 +170,10 @@
         </div>
 
         <button class="btn btn--primary btn--big" data-action="play">▶ PLAY</button>
-        <button class="btn btn--ghost" data-action="leaderboard">🏆 Leaderboard</button>
+        <div class="btn-row">
+          <button class="btn btn--ghost" data-action="wardrobe">👕 Dressing Room</button>
+          <button class="btn btn--ghost" data-action="leaderboard">🏆 Leaderboard</button>
+        </div>
 
         <p class="hint">
           <span class="hint--desktop"
@@ -248,6 +263,30 @@
           ></ol>
           <p class="leaderboard__note">Best score per player</p>
           <button class="btn btn--primary" data-action="close-leaderboard">Back</button>
+        </div>
+      </section>
+
+      <!-- Dressing Room: buy skins with DLI and change the character -->
+      <section id="screen-wardrobe" class="screen screen--overlay" hidden>
+        <div class="panel wardrobe">
+          <h2 class="panel__title">👕 Dressing Room</h2>
+          <p class="wardrobe__wallet">
+            <img src="/assets/brand/dli-coin.svg" alt="" />
+            <b data-bind="wardrobe-wallet">0</b> DLI
+          </p>
+          <div class="wardrobe__stage">
+            <img class="wardrobe__preview" data-bind="wardrobe-preview" alt="" />
+            <div class="wardrobe__caption">
+              <b data-bind="wardrobe-name">Classic</b>
+              <span data-bind="wardrobe-tagline"></span>
+            </div>
+          </div>
+          <p class="wardrobe__error" data-bind="wardrobe-error" role="alert" hidden></p>
+          <ul class="wardrobe__list" data-bind="wardrobe-list"></ul>
+          <p class="wardrobe__note">
+            Skins only change the look. Collect coins while you jump to earn DLI.
+          </p>
+          <button class="btn btn--primary" data-action="close-wardrobe">Back</button>
         </div>
       </section>
 

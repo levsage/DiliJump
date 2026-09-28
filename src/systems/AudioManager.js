@@ -103,6 +103,17 @@ export class AudioManager {
     this.tone({ freq: 988, dur: 0.07, type: 'square', vol: 0.18 });
     this.tone({ freq: 1319, dur: 0.16, type: 'square', vol: 0.18, delay: 0.07 });
   }
+  /** Magnet grabbed: a warbling rise. */
+  magnet() {
+    this.tone({ freq: 220, to: 880, dur: 0.28, type: 'sine', vol: 0.4 });
+    this.tone({ freq: 330, to: 1320, dur: 0.28, type: 'triangle', vol: 0.18, delay: 0.06 });
+  }
+  /** Coin bought / skin equipped in the Dressing Room. */
+  purchase() {
+    [659, 988, 1319].forEach((f, i) =>
+      this.tone({ freq: f, dur: 0.12, type: 'square', vol: 0.16, delay: i * 0.07 }),
+    );
+  }
   shoot() {
     this.tone({ freq: 900, to: 300, dur: 0.1, type: 'sawtooth', vol: 0.15 });
   }

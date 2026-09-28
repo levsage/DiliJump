@@ -42,6 +42,7 @@ export class Game {
       this.wallet.add(1);
       this.events.emit(EVENTS.HUD_COINS, n);
     });
+    on(EVENTS.MAGNET, () => this.audio.magnet());
     on(EVENTS.SHOOT, () => this.audio.shoot());
     on(EVENTS.WALL_BUMP, () => this.audio.bump());
     on(EVENTS.PLATFORM_BREAK, () => this.audio.crack());

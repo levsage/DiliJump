@@ -29,6 +29,17 @@ export class WalletService {
     return earned;
   }
 
+  /**
+   * Pays from the persistent balance (Dressing Room purchases).
+   * @returns {boolean} false (and nothing spent) when the balance is too low
+   */
+  spend(amount) {
+    if (!Number.isInteger(amount) || amount < 0 || amount > this.balance) return false;
+    this.balance -= amount;
+    this.save();
+    return true;
+  }
+
   save() {
     this.storage.set('wallet', { balance: this.balance, lifetime: this.lifetime });
   }

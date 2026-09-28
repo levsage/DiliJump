@@ -9,6 +9,32 @@
 | Stomp a glitch bug | +50                            |
 | Shoot a glitch bug | +30                            |
 
+## Coin magnet (`MAGNET` in `src/config/constants.js`)
+
+| Setting  | Value                                                                    |
+| -------- | ------------------------------------------------------------------------ |
+| Spawn    | 3.5% of decorated platforms, from 300 points on (never breaking ones)    |
+| Limits   | At most one magnet waiting in the level, none while a magnet is active   |
+| Duration | 8 s (HUD countdown; the field and badge blink during the last 2 s)       |
+| Reach    | Coins within 260 px of the mascot's body are pulled in                   |
+| Pull     | 3 200 px/s², up to 1 100 px/s, steered so coins home in instead of orbit |
+
+Coins that are already flying keep coming after the magnet runs out.
+
+## Dressing Room
+
+| Skin          | Price   |
+| ------------- | ------- |
+| Classic       | Free    |
+| Neon Wings    | 100 DLI |
+| Golden Seraph | 200 DLI |
+| Sunfire Angel | 250 DLI |
+| Galaxy Nebula | 300 DLI |
+
+Skins are cosmetic: the hitbox, physics and animations timings are the same
+for every skin, and every skin does exactly the classic mascot's poses. Purchases are paid from the DLI wallet and, like the wallet,
+are stored on the device (localStorage key `skins`).
+
 ## Player level
 
 Every point you score is also **XP**, and all your runs add up — even the ones
@@ -29,6 +55,10 @@ Your level is shown next to your name on the leaderboard for everyone to see.
 | `JUMP_VELOCITY`    | −1010 px/s | Apex ≈ 237 px                                            |
 | `SPRING_VELOCITY`  | −1650 px/s | Apex ≈ 633 px                                            |
 | `PLATFORM.MAX_GAP` | 200 px     | Always below the jump apex, so every level can be beaten |
+
+Only what you can see counts: platforms, springs and monsters whose top is
+below the bottom edge of the screen (minus `CAMERA.LANDING_MARGIN`, 6 px) can't
+be landed on or hit, so once you fall off the screen you keep falling.
 
 ## Platforms
 

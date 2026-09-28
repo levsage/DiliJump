@@ -1,4 +1,5 @@
-import { VIEW, PLAYER, PLATFORM_TYPES, WALL } from '../config/constants.js';
+import { VIEW, PLAYER, PLATFORM_TYPES, WALL, MAGNET } from '../config/constants.js';
+import { skinKey } from '../config/skins.js';
 import { COLORS } from './palette.js';
 import { drawLogo } from './brand.js';
 import { Background } from './Background.js';
@@ -21,16 +22,22 @@ export class Renderer {
     this.resize();
   }
 
-  cachePoses(poses) {
-    for (const p of poses) this.poseImages[p] = this.assets.get(`player.${p}`);
-  }
-
-  /** Animation atlases: `{ name: { img, cell:[w,h], cols, refHeight } }`. */
-  cacheSheets(meta) {
-    for (const [name, m] of Object.entries(meta)) {
-      const img = this.assets.get(`sheet.${name}`);
-      if (img) this.sheets[name] = { ...m, img };
+  /**
+   * Switch the player artwork to a skin whose images are already loaded.
+   * Poses: `{ pose: { img, refHeight } }`; atlases: `{ name: { img, cell, cols, refHeight } }`.
+   */
+  setSkin(skin) {
+    const poses = {};
+    for (const [p, m] of Object.entries(skin.art.poses)) {
+      poses[p] = { img: this.assets.get(skinKey.pose(skin.id, p)), refHeight: m.refHeight };
     }
+    const sheets = {};
+    for (const [name, m] of Object.entries(skin.art.sheets)) {
+      sheets[name] = { ...m, img: this.assets.get(skinKey.sheet(skin.id, name)) };
+    }
+    this.poseImages = poses;
+    this.sheets = sheets;
+    this.skinId = skin.id;
   }
 
   resize() {
@@ -61,10 +68,12 @@ export class Renderer {
 
     for (const p of world.platforms) if (visible(p.y)) this.drawPlatform(p);
     for (const s of world.springs) if (visible(s.y)) this.drawSpring(s);
+    for (const u of world.powerUps) if (visible(u.y)) this.drawMagnetPickup(u);
     for (const c of world.coins) if (visible(c.y)) this.drawCoin(c);
     for (const m of world.monsters) if (visible(m.y)) this.drawMonster(m);
     for (const b of world.projectiles) this.drawProjectile(b);
     this.drawParticles(world.particles.items);
+    if (world.player && world.magnetTime > 0) this.drawMagnetField(world.player, world.magnetTime);
     if (world.player) this.drawPlayer(world.player);
     ctx.restore();
 
@@ -292,6 +301,64 @@ export class Renderer {
     ctx.restore();
   }
 
+  /** Magnet power-up waiting on a platform: bobbing horseshoe in a glowing bubble. */
+  drawMagnetPickup(u) {
+    const { ctx } = this;
+    const alpha = u.collected ? 1 - u.collectT : 1;
+    const scale = u.collected ? 1 + u.collectT * 0.8 : 1 + Math.sin(u.phase * 1.5) * 0.04;
+    ctx.save();
+    ctx.globalAlpha = alpha;
+    ctx.translate(u.x, u.bobY);
+    ctx.scale(scale, scale);
+    const r = MAGNET.SIZE / 2 + 8;
+    const glow = ctx.createRadialGradient(0, 0, 4, 0, 0, r + 10);
+    glow.addColorStop(0, 'rgba(255, 90, 110, 0.45)');
+    glow.addColorStop(1, 'rgba(255, 90, 110, 0)');
+    ctx.fillStyle = glow;
+    ctx.beginPath();
+    ctx.arc(0, 0, r + 10, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.16)';
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.7)';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(0, 0, r, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+    ctx.rotate(Math.sin(u.phase) * 0.18);
+    drawMagnetIcon(ctx, MAGNET.SIZE);
+    ctx.restore();
+  }
+
+  /** Pulsing field around the player while the magnet is active (blinks before it ends). */
+  drawMagnetField(pl, timeLeft) {
+    if (!pl.alive) return;
+    const warn = timeLeft < MAGNET.WARN_TIME;
+    if (warn && Math.floor(timeLeft * 8) % 2 === 0) return;
+    const { ctx } = this;
+    const t = performance.now() / 1000;
+    const cy = pl.y - PLAYER.DRAW_HEIGHT / 2;
+    ctx.save();
+    // soft aura + rings shrinking towards the player
+    const aura = ctx.createRadialGradient(pl.x, cy, 20, pl.x, cy, 95);
+    aura.addColorStop(0, 'rgba(255, 90, 110, 0.16)');
+    aura.addColorStop(1, 'rgba(255, 90, 110, 0)');
+    ctx.fillStyle = aura;
+    ctx.beginPath();
+    ctx.arc(pl.x, cy, 95, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.lineWidth = 3;
+    for (let i = 0; i < 3; i++) {
+      const k = (t * 0.9 + i / 3) % 1;
+      const rad = 30 + (1 - k) * 62;
+      ctx.strokeStyle = `rgba(255, 120, 140, ${0.8 * Math.sin(k * Math.PI)})`;
+      ctx.beginPath();
+      ctx.arc(pl.x, cy, rad, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
+
   drawMonster(m) {
     const { ctx } = this;
     ctx.save();
@@ -399,15 +466,16 @@ export class Renderer {
         pxScale: PLAYER.DRAW_HEIGHT / sheet.refHeight,
       };
     }
-    const img = this.poseImages[pl.pose] ?? this.poseImages.idle;
-    if (!img) return null;
+    const pose = this.poseImages[pl.pose] ?? this.poseImages.idle;
+    if (!pose) return null;
+    const { img } = pose;
     return {
       img,
       sx: 0,
       sy: 0,
       sw: img.width,
       sh: img.height,
-      pxScale: PLAYER.DRAW_HEIGHT / img.height,
+      pxScale: PLAYER.DRAW_HEIGHT / (pose.refHeight ?? img.height),
     };
   }
 
@@ -457,6 +525,46 @@ export function drawFrame(
   ctx.rotate(rotation);
   ctx.scale(facing < 0 ? -1 : 1, 1);
   ctx.drawImage(img, sx, sy, sw, sh, -w / 2, pivot - h, w, h);
+  ctx.restore();
+}
+
+/** Red horseshoe magnet with silver tips, centred at the origin, opening up. */
+export function drawMagnetIcon(ctx, size) {
+  const r = size * 0.36; // arc radius (to the middle of the band)
+  const band = size * 0.26;
+  const leg = size * 0.3;
+  const top = -size * 0.34;
+  const arcY = top + leg;
+  ctx.save();
+  ctx.lineCap = 'butt';
+  ctx.lineJoin = 'round';
+  const path = () => {
+    ctx.beginPath();
+    ctx.moveTo(-r, top);
+    ctx.lineTo(-r, arcY);
+    ctx.arc(0, arcY, r, Math.PI, 0, true);
+    ctx.lineTo(r, top);
+  };
+  ctx.strokeStyle = '#5a0d18';
+  ctx.lineWidth = band + 3;
+  path();
+  ctx.stroke();
+  ctx.strokeStyle = '#e8283f';
+  ctx.lineWidth = band;
+  path();
+  ctx.stroke();
+  ctx.strokeStyle = 'rgba(255, 255, 255, 0.45)';
+  ctx.lineWidth = band * 0.25;
+  ctx.beginPath();
+  ctx.arc(0, arcY, r - band * 0.2, Math.PI * 0.95, Math.PI * 0.35, true);
+  ctx.stroke();
+  // silver pole tips
+  for (const sx of [-1, 1]) {
+    ctx.fillStyle = '#5a0d18';
+    ctx.fillRect(sx * r - band / 2 - 1.5, top - 1.5, band + 3, size * 0.16 + 3);
+    ctx.fillStyle = '#e6edf5';
+    ctx.fillRect(sx * r - band / 2, top, band, size * 0.16);
+  }
   ctx.restore();
 }
 

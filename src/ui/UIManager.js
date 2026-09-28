@@ -5,14 +5,16 @@ import { HUD } from './HUD.js';
 import { MenuScreen } from './screens/MenuScreen.js';
 import { GameOverScreen } from './screens/GameOverScreen.js';
 import { LeaderboardScreen } from './screens/LeaderboardScreen.js';
+import { WardrobeScreen } from './screens/WardrobeScreen.js';
+import { skinAvatarUrl } from '../config/skins.js';
 
 /**
  * Maps game states to visible screens and routes button actions
  * (declared in HTML via `data-action`) to game methods.
  */
 export class UIManager {
-  constructor({ game, events, profile, wallet, leaderboard, settings, audio }) {
-    Object.assign(this, { game, events, profile, wallet, leaderboard, settings, audio });
+  constructor({ game, events, profile, wallet, leaderboard, settings, audio, skins, applySkin }) {
+    Object.assign(this, { game, events, profile, wallet, leaderboard, settings, audio, skins });
 
     this.screens = {
       loading: $('#screen-loading'),
@@ -20,6 +22,7 @@ export class UIManager {
       pause: $('#screen-pause'),
       gameover: $('#screen-gameover'),
       leaderboard: $('#screen-leaderboard'),
+      wardrobe: $('#screen-wardrobe'),
     };
     this.controls = $('#controls');
     this.updateToast = $('#update-toast');
@@ -35,7 +38,16 @@ export class UIManager {
         leaderboard.rename(oldName, name);
       },
     });
-    this.gameOver = new GameOverScreen({ profile, wallet });
+    this.gameOver = new GameOverScreen({ profile, wallet, skins });
+    this.wardrobe = new WardrobeScreen({
+      skins,
+      wallet,
+      onEquip: (id) => applySkin(id),
+      onPurchase: () => {
+        this.audio.purchase();
+        this.menu.refresh();
+      },
+    });
     this.board = new LeaderboardScreen({
       leaderboard,
       profile,
@@ -56,6 +68,7 @@ export class UIManager {
     });
     events.on(EVENTS.FATAL, () => this.showFatal());
     events.on(EVENTS.PROFILE_SYNCED, () => this.onProfileSynced());
+    events.on(EVENTS.SKIN_CHANGED, (id) => this.hud.setAvatar(skinAvatarUrl(id)));
 
     const touch = window.matchMedia('(pointer: coarse)').matches;
     document.body.classList.toggle('is-touch', touch);
@@ -98,6 +111,8 @@ export class UIManager {
       menu: () => this.game.quitToMenu(),
       leaderboard: () => this.openLeaderboard(),
       'close-leaderboard': () => this.closeLeaderboard(),
+      wardrobe: () => this.openWardrobe(),
+      'close-wardrobe': () => this.closeWardrobe(),
       reload: () => window.location.reload(),
       mute: () => {
         const muted = this.settings.toggleMuted();
@@ -153,9 +168,21 @@ export class UIManager {
     this.screens.leaderboard.hidden = true;
   }
 
+  openWardrobe() {
+    this.screens.wardrobe.hidden = false;
+    this.wardrobe.open();
+  }
+
+  closeWardrobe() {
+    this.wardrobe.close();
+    this.screens.wardrobe.hidden = true;
+    if (this.game.state === GAME_STATES.MENU) this.menu.refresh();
+  }
+
   onState(state) {
     const s = this.screens;
     if (!s.leaderboard.hidden) this.board.close();
+    if (!s.wardrobe.hidden) this.wardrobe.close();
     for (const el of Object.values(s)) el.hidden = true;
     const playing = state === GAME_STATES.PLAYING || state === GAME_STATES.PAUSED;
     this.hud.show(playing);

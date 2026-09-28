@@ -69,3 +69,43 @@ describe('side walls', () => {
     }
   });
 });
+
+describe('off-screen platforms', () => {
+  it('a platform below the bottom of the screen never catches a falling player', async () => {
+    const { World } = await import('../src/core/World.js');
+    const { EventBus } = await import('../src/core/EventBus.js');
+    const { CAMERA } = await import('../src/config/constants.js');
+    const world = new World(new EventBus());
+    const still = { axis: 0, consumeShoot: () => false };
+    world.springs = [];
+    world.monsters = [];
+    world.coins = [];
+    world.powerUps = [];
+    const bottom = world.camera.bottom;
+    const hidden = new Platform(world.player.x - 30, bottom + 40, PLATFORM_TYPES.NORMAL);
+    const visible = new Platform(world.player.x - 30, bottom - 60, PLATFORM_TYPES.NORMAL);
+
+    // only the hidden platform under the player: they fall straight through it
+    world.platforms = [hidden];
+    world.player.y = bottom + 10;
+    world.player.vy = 400;
+    for (let i = 0; i < 20; i++) world.update(dt, still);
+    expect(world.player.y).toBeGreaterThan(hidden.y);
+    expect(world.player.vy).toBeGreaterThan(0);
+
+    // a platform that is on screen still works normally
+    const w2 = new World(new EventBus());
+    w2.springs = [];
+    w2.monsters = [];
+    w2.platforms = [visible];
+    w2.player.y = visible.y - 30;
+    w2.player.vy = 400;
+    let bounced = false;
+    for (let i = 0; i < 20 && !bounced; i++) {
+      w2.update(dt, still);
+      bounced = w2.player.vy < 0;
+    }
+    expect(bounced).toBe(true);
+    expect(CAMERA.LANDING_MARGIN).toBeGreaterThan(0);
+  });
+});

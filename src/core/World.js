@@ -1,4 +1,15 @@
-import { VIEW, PHYSICS, SCORING, MONSTER, COIN, PLAYFIELD, WALL } from '../config/constants.js';
+import {
+  VIEW,
+  PHYSICS,
+  SCORING,
+  MONSTER,
+  COIN,
+  MAGNET,
+  PLAYFIELD,
+  WALL,
+  PLAYER,
+  CAMERA,
+} from '../config/constants.js';
 import { Player } from '../entities/Player.js';
 import { Projectile } from '../entities/Projectile.js';
 import { ParticleSystem } from '../entities/Particle.js';
@@ -23,6 +34,7 @@ export class World {
   reset(seed = Date.now()) {
     this.platforms = [];
     this.coins = [];
+    this.powerUps = [];
     this.springs = [];
     this.monsters = [];
     this.projectiles = [];
@@ -37,6 +49,9 @@ export class World {
     this.maxHeight = 0;
     this.elapsed = 0; // seconds of simulated play (pauses excluded)
     this.over = false;
+    /** Seconds of coin magnet left (0 = inactive). */
+    this.magnetTime = 0;
+    this.magnetShown = -1;
 
     this.generator = new LevelGenerator(this, { seed });
     const startY = VIEW.HEIGHT - 60;
@@ -74,12 +89,16 @@ export class World {
     for (const p of this.platforms) p.update(dt, PLAYFIELD);
     for (const s of this.springs) s.update(dt);
     for (const c of this.coins) c.update(dt);
+    for (const u of this.powerUps) u.update(dt);
+    this.updateMagnet(dt);
     for (const m of this.monsters) m.update(dt, PLAYFIELD);
     for (const b of this.projectiles) b.update(dt, camera.y);
     this.particles.update(dt);
 
     if (player.alive) {
       this.handleLanding();
+      this.handlePowerUps();
+      this.pullCoins(dt);
       this.handleCoins();
       this.handleMonsters();
       this.handleProjectiles();
@@ -149,13 +168,19 @@ export class World {
     });
   }
 
+  /** World y below which nothing can be landed on (the bottom edge of the screen). */
+  get landingFloor() {
+    return this.camera.bottom - CAMERA.LANDING_MARGIN;
+  }
+
   handleLanding() {
     const { player } = this;
     if (!player.isFalling) return;
     const feet = player.feet;
+    const floor = this.landingFloor;
 
     for (const s of this.springs) {
-      if (s.dead) continue;
+      if (s.dead || s.y > floor) continue;
       if (landsOn(feet, player.prevY, player.y, player.vy, { x: s.x, y: s.y, w: s.w })) {
         player.y = s.y;
         player.bounce(PHYSICS.SPRING_VELOCITY, { spring: true });
@@ -167,7 +192,7 @@ export class World {
     }
 
     for (const p of this.platforms) {
-      if (!p.solid) continue;
+      if (!p.solid || p.y > floor) continue; // off-screen platforms don't catch you
       if (!landsOn(feet, player.prevY, player.y, player.vy, p)) continue;
 
       if (p.type === 'breaking') {
@@ -194,6 +219,51 @@ export class World {
       });
       this.events.emit(EVENTS.JUMP);
       return;
+    }
+  }
+
+  /** Point the magnet pulls towards: the middle of the mascot's body. */
+  get magnetTarget() {
+    return { x: this.player.x, y: this.player.y - PLAYER.HITBOX_HEIGHT / 2 };
+  }
+
+  updateMagnet(dt) {
+    if (this.magnetTime > 0) this.magnetTime = Math.max(0, this.magnetTime - dt);
+    // the HUD countdown only needs whole seconds
+    const shown = Math.ceil(this.magnetTime);
+    if (shown !== this.magnetShown) {
+      this.magnetShown = shown;
+      this.events.emit(EVENTS.HUD_MAGNET, shown);
+    }
+  }
+
+  handlePowerUps() {
+    const box = this.player.hitbox;
+    for (const u of this.powerUps) {
+      if (u.collected || u.dead) continue;
+      if (!circleRectOverlap(u.x, u.bobY, u.r, box)) continue;
+      u.collect();
+      this.magnetTime = MAGNET.DURATION;
+      this.particles.emit(u.x, u.bobY, {
+        count: 18,
+        color: '#ff5a6e',
+        speed: 240,
+        life: 0.5,
+        size: 3,
+      });
+      this.events.emit(EVENTS.MAGNET, MAGNET.DURATION);
+    }
+  }
+
+  /** While the magnet is on, coins within range fly to the player. */
+  pullCoins(dt) {
+    const { x, y } = this.magnetTarget;
+    const r2 = MAGNET.RADIUS * MAGNET.RADIUS;
+    for (const c of this.coins) {
+      if (c.collected) continue;
+      // coins already flying keep coming even if the magnet just ran out
+      const inRange = this.magnetTime > 0 && (c.x - x) ** 2 + (c.y - y) ** 2 < r2;
+      if (c.magnetized || inRange) c.pullTowards(x, y, dt);
     }
   }
 
@@ -224,8 +294,9 @@ export class World {
     for (const m of this.monsters) {
       if (!m.alive) continue;
       const mb = m.hitbox;
+      if (mb.y > this.landingFloor) continue; // off-screen: can't be stomped or hit
       if (!aabbOverlap(box, mb)) continue;
-      // Stomp: falling and feet near the monster's top.
+      // Stomp: falling and feet near the monster's top (only if you can see it).
       if (player.isFalling && player.prevY <= mb.y + 16) {
         m.kill();
         player.y = mb.y;
@@ -267,6 +338,7 @@ export class World {
     const keep = (e) => !e.dead && e.y < limit;
     this.platforms = this.platforms.filter(keep);
     this.coins = this.coins.filter(keep);
+    this.powerUps = this.powerUps.filter(keep);
     this.springs = this.springs.filter((s) => !s.dead && s.platform.y < limit);
     this.monsters = this.monsters.filter((m) => !m.dead && m.y < limit + 200);
     this.projectiles = this.projectiles.filter((b) => !b.dead);
