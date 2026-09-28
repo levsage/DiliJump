@@ -75,10 +75,17 @@ _SKIP = {("poses", 2), ("jump", 2), ("spring-b", 1), ("spring-b", 2)}
 _TUCK = {("spring-b", 1): 0.8, ("spring-b", 2): 0.8}
 
 SKINS = {
-    "wings": {"visor": "sky", "sources": _GRID, "poses": _POSES, "sheets": _SHEETS,
-              "visor_skip": _SKIP},
-    "golden": {"visor": "grey", "sources": _GRID, "poses": _POSES, "sheets": _SHEETS,
-               "visor_skip": _SKIP},
+    "wings": {"visor": "sky", "sources": _GRID, "poses": _POSES,
+              # the spring-a flight frames strayed; spring-b frame 0 is the same
+              # classic flight pose, so it stands in for them
+              "sheets": {**_SHEETS, "spring": [("spring-a", 0), ("spring-a", 1), ("spring-b", 0),
+                                              ("spring-b", 0)] + _SHEETS["spring"][4:]},
+              "visor_skip": _SKIP, "scale_mul": _TUCK},
+    "golden": {"visor": "grey", "sources": _GRID, "poses": _POSES,
+               # spring-a frame 2 strayed from the flight pose: frame 3 is used twice
+               "sheets": {**_SHEETS, "spring": [("spring-a", 0), ("spring-a", 1), ("spring-a", 3)]
+                          + _SHEETS["spring"][3:]},
+               "visor_skip": _SKIP, "scale_mul": _TUCK},
     "sunfire": {"visor": "navy", "sources": _GRID, "poses": _POSES, "sheets": _SHEETS,
                 "visor_skip": _SKIP, "scale_mul": _TUCK},
     "galaxy": {"visor": "sky", "sources": _GRID, "poses": _POSES,
