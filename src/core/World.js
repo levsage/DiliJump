@@ -8,6 +8,7 @@ import {
   PLAYFIELD,
   WALL,
   PLAYER,
+  CAMERA,
 } from '../config/constants.js';
 import { Player } from '../entities/Player.js';
 import { Projectile } from '../entities/Projectile.js';
@@ -167,13 +168,19 @@ export class World {
     });
   }
 
+  /** World y below which nothing can be landed on (the bottom edge of the screen). */
+  get landingFloor() {
+    return this.camera.bottom - CAMERA.LANDING_MARGIN;
+  }
+
   handleLanding() {
     const { player } = this;
     if (!player.isFalling) return;
     const feet = player.feet;
+    const floor = this.landingFloor;
 
     for (const s of this.springs) {
-      if (s.dead) continue;
+      if (s.dead || s.y > floor) continue;
       if (landsOn(feet, player.prevY, player.y, player.vy, { x: s.x, y: s.y, w: s.w })) {
         player.y = s.y;
         player.bounce(PHYSICS.SPRING_VELOCITY, { spring: true });
@@ -185,7 +192,7 @@ export class World {
     }
 
     for (const p of this.platforms) {
-      if (!p.solid) continue;
+      if (!p.solid || p.y > floor) continue; // off-screen platforms don't catch you
       if (!landsOn(feet, player.prevY, player.y, player.vy, p)) continue;
 
       if (p.type === 'breaking') {
@@ -287,8 +294,9 @@ export class World {
     for (const m of this.monsters) {
       if (!m.alive) continue;
       const mb = m.hitbox;
+      if (mb.y > this.landingFloor) continue; // off-screen: can't be stomped or hit
       if (!aabbOverlap(box, mb)) continue;
-      // Stomp: falling and feet near the monster's top.
+      // Stomp: falling and feet near the monster's top (only if you can see it).
       if (player.isFalling && player.prevY <= mb.y + 16) {
         m.kill();
         player.y = mb.y;

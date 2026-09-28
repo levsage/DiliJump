@@ -169,6 +169,11 @@ export const PROJECTILE = Object.freeze({
 export const CAMERA = Object.freeze({
   /** Player is kept at or below this fraction of the screen height. */
   FOLLOW_LINE: 0.42,
+  /**
+   * Only platforms / springs / monsters at least this far above the bottom
+   * edge of the screen can be landed on — never ones you can't see.
+   */
+  LANDING_MARGIN: 6,
 });
 
 export const SCORING = Object.freeze({
