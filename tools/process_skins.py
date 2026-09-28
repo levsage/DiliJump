@@ -1,19 +1,22 @@
 #!/usr/bin/env python3
 """Build the purchasable character skins from their generated sheets.
 
-Each skin lives in ``art/skins/<id>/`` as four magenta-background sheets
-generated from the uploaded character art (see art/README.md):
+Each skin lives in ``art/skins/<id>/`` as four magenta-background sheets.
+Every sheet is generated as a redraw of the matching **classic reference
+sheet** in ``art/skins/_classic/`` (``--refs`` rebuilds those from the game's
+own classic frames): same 2x2 layout, same poses, same proportions — only the
+costume changes, so every skin does exactly the classic mascot's moves:
 
-    poses.png     idle / shoot / hurt / cheer (+ spare poses)
-    jump.png      squat / rising / falling (+ spare)
-    spring-a.png  charge / blast-off / flight / flight
-    spring-b.png  flight / tuck / tuck / star
+    poses.webp     idle / shoot / hurt / cheer
+    jump.webp      squat / rising / falling (+ idle, unused)
+    spring-a.webp  charge / blast-off / flight / flight
+    spring-b.webp  flight / tuck / tuck / star
 
-The AI draws every figure at a slightly different size — and wings and tails
-make the bounding box useless as a size reference — so every frame is scaled
-by the width of its **visor**, which every pose shows. The target is the
-classic mascot's visor (in the classic 320-unit pose canvas), times a per-skin
-``factor`` for characters whose helmet is proportionally bigger.
+The AI redraws each sheet at a slightly different size, and wings, plumes and
+tails make bounding boxes useless, so each sheet is scaled by its **visors**:
+the median ratio between the classic frame's visor and the skin frame's visor
+over the frames where both measure cleanly. One scale per sheet keeps the
+relative sizes exactly as in the classic sheet.
 
 Output per skin (``public/assets/sprites/skins/<id>/``, content-hashed):
   * ``<pose>.<hash>.webp``  single poses on a shared canvas, 1 px = 1 unit
@@ -52,39 +55,43 @@ AVATAR_PX = 128
 WEBP_QUALITY = 88
 POSES = ("idle", "shoot", "hurt", "cheer")
 
-SKINS = {
-    "wings": {
-        "visor": "navy",
-        "factor": 0.7,  # slim visor on a big helmet
-        "sources": {"poses": (2, 2), "jump": (2, 2), "spring-a": "blob", "spring-b": (2, 2)},
-        "poses": {"idle": ("poses", 0), "shoot": ("poses", 1), "hurt": ("poses", 2),
-                  "cheer": ("poses", 3)},
-        "sheets": {
-            "jump": [("jump", 0), ("jump", 1), ("jump", 2)],
-            "spring": [("spring-a", 0), ("spring-a", 1), ("spring-a", 2), ("spring-a", 3),
-                       ("spring-b", 0), ("spring-b", 1), ("spring-b", 2), ("spring-b", 3)],
-        },
-        # tilted / side-on heads read narrow visors: size them like a reference frame
-        "visor_from": {("poses", 2): ("poses", 0), ("spring-b", 1): ("spring-b", 0),
-                       ("spring-b", 2): ("spring-b", 0)},
-        # the tuck balls were drawn larger than the flight frames around them
-        "scale_mul": {("spring-b", 1): 0.8, ("spring-b", 2): 0.8},
-    },
-    "golden": {
-        "visor": "grey",
-        "factor": 1.0,
-        "sources": {"poses": (4, 2), "jump": (4, 2), "spring-a": (2, 2), "spring-b": (2, 2)},
-        "poses": {"idle": ("poses", 0), "shoot": ("poses", 3), "hurt": ("poses", 4),
-                  "cheer": ("poses", 7)},
-        "sheets": {
-            "jump": [("jump", 0), ("jump", 1), ("jump", 4)],
-            "spring": [("spring-a", 0), ("spring-a", 1), ("spring-a", 2), ("spring-a", 3),
-                       ("spring-b", 0), ("spring-b", 1), ("spring-b", 2), ("spring-b", 3)],
-        },
-        "visor_from": {("poses", 4): ("poses", 0), ("spring-b", 1): ("spring-b", 0),
-                       ("spring-b", 2): ("spring-b", 0)},
-    },
+# Every skin sheet is a redraw of the matching classic reference sheet in
+# art/skins/_classic/ (same 2x2 layout, same poses) — only the costume differs.
+# ``sources``: sheet -> (cols, rows) grid, or ("blob", n) for n loose figures.
+# ``slots``: skin frame -> classic reference slot, when a sheet has extra figures.
+# ``visor_skip``: frames whose visor can't be measured (tilted / hidden heads).
+# ``factor``: optional size fudge; ``scale_mul``: per-frame size correction.
+_GRID = {"poses": (2, 2), "jump": (2, 2), "spring-a": (2, 2), "spring-b": (2, 2)}
+_POSES = {"idle": ("poses", 0), "shoot": ("poses", 1), "hurt": ("poses", 2), "cheer": ("poses", 3)}
+_SHEETS = {
+    "jump": [("jump", 0), ("jump", 1), ("jump", 2)],
+    "spring": [("spring-a", 0), ("spring-a", 1), ("spring-a", 2), ("spring-a", 3),
+               ("spring-b", 0), ("spring-b", 1), ("spring-b", 2), ("spring-b", 3)],
 }
+_SKIP = {("poses", 2), ("jump", 2), ("spring-b", 1), ("spring-b", 2)}
+
+SKINS = {
+    "wings": {"visor": "sky", "sources": _GRID, "poses": _POSES, "sheets": _SHEETS,
+              "visor_skip": _SKIP},
+    "golden": {"visor": "grey", "sources": _GRID, "poses": _POSES, "sheets": _SHEETS,
+               "visor_skip": _SKIP},
+    "sunfire": {"visor": "navy", "sources": _GRID, "poses": _POSES, "sheets": _SHEETS,
+                "visor_skip": _SKIP},
+    "galaxy": {"visor": "sky", "sources": _GRID, "poses": _POSES, "sheets": _SHEETS,
+               "visor_skip": _SKIP},
+}
+
+
+def visor_width(rgba, kind, tops=(0.7,)):
+    """Visor width, or None when the blob isn't visor-shaped (wider than tall)."""
+    for t in tops:
+        try:
+            x0, y0, x1, y1 = visor_box(rgba, kind, top_only=t)
+        except SystemExit:
+            continue
+        if 1.15 < (x1 - x0) / max(1, y1 - y0) < 1.8:
+            return x1 - x0
+    return None
 
 
 def visor_box(rgba, kind, top_only=1.0):
@@ -96,15 +103,34 @@ def visor_box(rgba, kind, top_only=1.0):
     v = rgb.max(-1)
     s = np.where(v > 0, (v - rgb.min(-1)) / np.maximum(v, 1e-6), 0)
     solid = f[..., 3] > 128
-    if kind == "navy":  # dark saturated blue (classic / wings)
+    if kind == "sky":  # medium blue, told apart from indigo suits by hue (galaxy)
+        mx, mn = rgb.max(-1), rgb.min(-1)
+        d = np.maximum(mx - mn, 1e-6)
+        hue = np.where(mx == b, 240 + 60 * (r - g) / d, np.where(mx == g, 120 + 60 * (b - r) / d, 0))
+        m = solid & (mx == b) & (hue > 196) & (hue < 226) & (v > 0.3) & (v < 0.85) & (s > 0.4)
+    elif kind == "navy":  # dark saturated blue (classic / wings / sunfire)
         m = solid & (b > r + 0.2) & (v > 0.25) & (v < 0.75) & (s > 0.45)
     else:  # desaturated grey-blue (golden)
         m = solid & (b > r + 0.08) & (b >= g - 0.02) & (v > 0.45) & (v < 0.9) & (s > 0.12) & (s < 0.5)
-    m = ndimage.binary_fill_holes(ndimage.binary_closing(m, iterations=4))
+    m = ndimage.binary_fill_holes(ndimage.binary_closing(m, iterations=2 if kind == "sky" else 4))
     lab, n = ndimage.label(m)
     if n == 0:
         raise SystemExit("no visor found")
-    k = int(np.argmax(ndimage.sum(m, lab, range(1, n + 1)))) + 1
+    areas = ndimage.sum(m, lab, range(1, n + 1))
+    k = int(np.argmax(areas)) + 1
+    if kind == "sky":
+        # the suit shares the visor's hue: the visor is the topmost solid, wide blob
+        # (tendrils are thin, fists small, the chest emblem sits below the visor)
+        objs = ndimage.find_objects(lab)
+        cand = []
+        for i, (ys, xs) in enumerate(objs):
+            w, h = xs.stop - xs.start, ys.stop - ys.start
+            if areas[i] >= 0.15 * areas.max() and areas[i] / (w * h) > 0.55 and 1.05 < w / h < 2.4:
+                cand.append(i)
+        if cand:
+            biggest = max(areas[i] for i in cand)
+            cand = [i for i in cand if areas[i] >= 0.35 * biggest]
+            k = min(cand, key=lambda i: objs[i][0].start) + 1
     ys, xs = ndimage.find_objects(lab)[k - 1]
     return xs.start, ys.start, xs.stop, ys.stop
 
@@ -112,10 +138,11 @@ def visor_box(rgba, kind, top_only=1.0):
 def load_frames(skin_id, cfg):
     frames = {}
     for sheet, layout in cfg["sources"].items():
-        rgb = np.array(Image.open(os.path.join(ART, skin_id, f"{sheet}.png")).convert("RGB"))
+        # sheets are stored as lossless WebP (a third smaller than PNG, same pixels)
+        rgb = np.array(Image.open(os.path.join(ART, skin_id, f"{sheet}.webp")).convert("RGB"))
         rgba = key_out(rgb.astype(float))
-        if layout == "blob":  # rows overlap vertically: separate by connected blobs
-            boxes, lab = find_frames(rgba, 4)
+        if layout[0] == "blob":  # loose figures: separate by connected blobs
+            boxes, lab = find_frames(rgba, layout[1])
             cut = [tight(rgba, b, lab) for b in boxes]
         else:
             cut = grid_frames(rgba, *layout)
@@ -167,13 +194,28 @@ def build_skin(skin_id, cfg):
     folder = os.path.join(OUT, skin_id)
     os.makedirs(folder, exist_ok=True)
     frames = load_frames(skin_id, cfg)
-    boxes = {k: visor_box(f, cfg["visor"], top_only=0.7) for k, f in frames.items()}
-    target = CLASSIC_VISOR * cfg["factor"]
+    classic = classic_visors()
+    used = set(cfg["poses"].values()) | {k for keys in cfg["sheets"].values() for k in keys}
+    # one scale per source sheet: median of classic-visor / skin-visor over the frames
+    # both sides measure cleanly, so relative sizes stay exactly as drawn
+    sheet_scale = {}
+    for sheet in cfg["sources"]:
+        ratios = []
+        for key in sorted(k for k in used if k[0] == sheet):
+            if key in cfg.get("visor_skip", ()):
+                continue
+            cw = classic.get(cfg.get("slots", {}).get(key, key))
+            sw = visor_width(frames[key], cfg["visor"])
+            if cw and sw:
+                ratios.append(cw / sw)
+        if not ratios:
+            raise SystemExit(f"{skin_id}: no measurable visor on {sheet}")
+        sheet_scale[sheet] = float(np.median(ratios)) * cfg.get("factor", 1.0)
+        print(f"  {skin_id}.{sheet}: scale {sheet_scale[sheet]:.3f} from {len(ratios)} frames "
+              f"(spread {min(ratios) / max(ratios):.2f})")
 
     def scale_for(key):
-        ref = cfg.get("visor_from", {}).get(key, key)
-        mul = cfg.get("scale_mul", {}).get(key, 1.0)
-        return target * mul / (boxes[ref][2] - boxes[ref][0])
+        return sheet_scale[key[0]] * cfg.get("scale_mul", {}).get(key, 1.0)
 
     entry = {"poses": {}, "sheets": {}}
     # single poses: 1 px per unit on a canvas shared by all four poses
@@ -203,12 +245,68 @@ def build_skin(skin_id, cfg):
         print(f"  {skin_id}.{sheet}-sheet {atlas.width}x{atlas.height}  {size / 1024:.0f} KB")
 
     idle = frames[cfg["poses"]["idle"]]
-    name, _ = avatar(idle, boxes[cfg["poses"]["idle"]], folder, cfg["factor"])
+    box = visor_box(idle, cfg["visor"], top_only=0.7)
+    name, _ = avatar(idle, box, folder)
     entry["avatar"] = f"skins/{skin_id}/{name}"
     return entry
 
 
+REF_DIR = os.path.join(ART, "_classic")
+REF_CELL = 512
+REF_SCALE = 1.25  # px per unit on the reference sheets
+# which classic frames go on which reference sheet (2x2, reading order)
+REF_SHEETS = {
+    "poses": [("pose", "idle"), ("pose", "shoot"), ("pose", "hurt"), ("pose", "cheer")],
+    "jump": [("jump", 0), ("jump", 1), ("jump", 2), ("pose", "idle")],  # 4th: spare
+    "spring-a": [("spring", 0), ("spring", 1), ("spring", 2), ("spring", 3)],
+    "spring-b": [("spring", 4), ("spring", 5), ("spring", 6), ("spring", 7)],
+}
+
+
+def classic_frame(kind, key):
+    """A classic frame as RGBA at 1 px per unit (bottom-centre anchored)."""
+    if kind == "pose":
+        return Image.open(os.path.join(SPRITES, f"{key}.webp")).convert("RGBA")
+    meta = json.load(open(os.path.join(ROOT, "src", "config", "spriteSheets.json")))[kind]
+    atlas = Image.open(os.path.join(SPRITES, meta["file"])).convert("RGBA")
+    cw, ch = meta["cell"]
+    x, y = (key % meta["cols"]) * cw, (key // meta["cols"]) * ch
+    cell = atlas.crop((x, y, x + cw, y + ch))
+    k = UNITS / meta["refHeight"]
+    return cell.resize((round(cw * k), round(ch * k)), Image.LANCZOS)
+
+
+def classic_visors():
+    """Visor width of every classic reference slot (units), None if unmeasurable."""
+    out = {}
+    for sheet, frames in REF_SHEETS.items():
+        for i, (kind, key) in enumerate(frames):
+            f = np.array(classic_frame(kind, key))
+            out[(sheet, i)] = visor_width(f, "navy", tops=(0.6, 0.42))  # cape is navy too
+    return out
+
+
+def build_references():
+    """Classic mascot frames on magenta 2x2 sheets: the pose reference every
+    skin is generated from, so all skins do exactly the classic poses."""
+    os.makedirs(REF_DIR, exist_ok=True)
+    for sheet, frames in REF_SHEETS.items():
+        out = Image.new("RGBA", (REF_CELL * 2, REF_CELL * 2), (255, 0, 255, 255))
+        for i, (kind, key) in enumerate(frames):
+            f = classic_frame(kind, key)
+            bbox = f.getbbox()
+            f = f.crop(bbox)
+            f = f.resize((round(f.width * REF_SCALE), round(f.height * REF_SCALE)), Image.LANCZOS)
+            cx = (i % 2) * REF_CELL + (REF_CELL - f.width) // 2
+            cy = (i // 2) * REF_CELL + REF_CELL - 36 - f.height
+            out.alpha_composite(f, (cx, max((i // 2) * REF_CELL + 8, cy)))
+        out.convert("RGB").save(os.path.join(REF_DIR, f"{sheet}.png"))
+        print(f"reference {sheet}.png")
+
+
 def main():
+    if "--refs" in sys.argv:
+        return build_references()
     shutil.rmtree(OUT, ignore_errors=True)
     os.makedirs(OUT)
     manifest = {}

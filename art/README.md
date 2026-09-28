@@ -10,10 +10,11 @@ Source artwork. **Not shipped** with the game; only the processed files in
 | `poses/*.png` | AI-generated pose renders on a flat magenta (`#FF00FF`) chroma background |
 | `sheets/jump.png` | AI-generated 30-frame jump cycle (6×5 grid, magenta background) |
 | `sheets/spring.png` | AI-generated 8-frame spring super-jump (charge, blast-off, flight ×3, tuck ×2, unfold) |
-| `skins/<id>/reference.jpg` | Uploaded character art the skin was generated from |
-| `skins/<id>/poses.png` | Idle / shoot / hurt / cheer (+ spare poses), magenta background |
-| `skins/<id>/jump.png` | Squat / rising / falling (+ spare) |
-| `skins/<id>/spring-a.png`, `spring-b.png` | 8-frame spring super-jump, 4 frames per sheet |
+| `skins/_classic/*.png` | Classic mascot reference sheets (2x2, magenta), built from the game's own frames by `process_skins.py --refs` |
+| `skins/<id>/reference.jpg` | Uploaded costume art the skin was generated from |
+| `skins/<id>/poses.webp` | Idle / shoot / hurt / cheer, magenta background |
+| `skins/<id>/jump.webp` | Squat / rising / falling (+ idle, unused) |
+| `skins/<id>/spring-a.webp`, `spring-b.webp` | 8-frame spring super-jump, 4 frames per sheet |
 
 ## Regenerating sprites
 
@@ -49,14 +50,24 @@ npm run sprites:skins
 # = python3 tools/process_skins.py  → public/assets/sprites/skins/<id>/*.<hash>.webp + src/config/skins.json
 ```
 
-Each skin (`wings`, `golden`) has four sheets generated from its reference with
-the same prompts as the classic mascot. The AI draws every figure at a slightly
-different size, and wings and tails make the bounding box useless as a size
-reference, so the script scales **every frame by the width of its visor** to
-match the classic mascot (with a per-skin `factor` for helmets drawn bigger or
-smaller around the visor, and `visor_from` / `scale_mul` overrides for tilted
-or tucked heads). Which frame of which sheet becomes which pose is listed in
-the `SKINS` table at the top of the script.
+Each skin (`wings`, `golden`, `sunfire`, `galaxy`) has four sheets, stored as
+lossless WebP (a third smaller than PNG, identical pixels). Every
+sheet is a redraw of the matching **classic reference sheet** in
+`skins/_classic/` (`python3 tools/process_skins.py --refs` rebuilds those from
+the game's own classic frames), with two images given to the image model: the
+classic sheet ("keep this exact layout, these exact poses and proportions")
+and the costume ("only change the outfit to this"). So every skin does exactly
+the classic mascot's moves, frame for frame.
+
+The AI still redraws each sheet at a slightly different size, and wings, plumes
+and tails make the bounding box useless as a size reference, so the script
+gives **each sheet one scale**: the median ratio between the classic frame's
+visor and the skin frame's visor, over the frames where both measure cleanly
+(`visor_skip` lists tilted or tucked heads). Visors are found by colour (`navy`,
+`grey` or `sky`; `sky` tells a medium-blue visor from an indigo suit by hue and
+shape). `scale_mul` corrects single frames drawn out of proportion. Which frame
+of which sheet becomes which pose is listed in the `SKINS` table at the top of
+the script.
 
 Output per skin: the four single poses (shared canvas, 320 units = the mascot's
 draw height), the jump and spring atlases, and a head-crop avatar for the HUD.
