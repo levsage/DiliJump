@@ -24,6 +24,8 @@ export const EVENTS = Object.freeze({
   STATE_CHANGE: 'state:change',
   SCORE: 'score:change',
   COIN: 'coin:collect',
+  MAGNET: 'powerup:magnet',
+  HUD_MAGNET: 'hud:magnet',
   JUMP: 'player:jump',
   SPRING: 'player:spring',
   SHOOT: 'player:shoot',
@@ -35,6 +37,7 @@ export const EVENTS = Object.freeze({
   HUD_COINS: 'hud:coins',
   RUN_SUBMITTED: 'run:submitted',
   PROFILE_SYNCED: 'profile:synced',
+  SKIN_CHANGED: 'skin:changed',
   FATAL: 'app:fatal',
   UPDATE_READY: 'app:update-ready',
 });

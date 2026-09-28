@@ -4,7 +4,7 @@ import { createHash } from 'node:crypto';
 import { GameLoop, MAX_FRAME_ERRORS } from '../src/core/GameLoop.js';
 import { AssetLoader } from '../src/core/AssetLoader.js';
 import { CSP_HEADER, CSP_META } from '../tools/vite/csp.js';
-import { PLAYER_POSES, ASSETS, SPRITE_SHEETS } from '../src/config/assets.js';
+import { SKINS, SKIN_POSES, skinManifest } from '../src/config/skins.js';
 
 describe('Content Security Policy', () => {
   const vercel = JSON.parse(readFileSync(new URL('../vercel.json', import.meta.url), 'utf8'));
@@ -26,30 +26,51 @@ describe('Content Security Policy', () => {
   });
 });
 
-describe('shipped sprites', () => {
-  const meta = JSON.parse(
-    readFileSync(new URL('../public/assets/sprites/sprites.json', import.meta.url), 'utf8'),
-  );
+const sprite = (file) => readFileSync(new URL(`../public/assets/sprites/${file}`, import.meta.url));
 
-  it('every pose the game loads exists as a WebP', () => {
-    for (const pose of PLAYER_POSES) {
-      expect(ASSETS.images[`player.${pose}`]).toMatch(/\.webp$/);
-      const file = new URL(`../public/assets/sprites/${pose}.webp`, import.meta.url);
-      expect(readFileSync(file).subarray(8, 12).toString()).toBe('WEBP');
-      expect(meta.frames[pose].file).toBe(`${pose}.webp`);
-    }
+describe('shipped sprites (every skin)', () => {
+  const meta = JSON.parse(sprite('sprites.json').toString());
+
+  it('the classic poses match sprites.json', () => {
+    for (const pose of SKIN_POSES) expect(meta.frames[pose].file).toBe(`${pose}.webp`);
   });
+
+  for (const skin of SKINS) {
+    it(`${skin.id}: every pose, atlas and the avatar exist as WebP`, () => {
+      expect(Object.keys(skin.art.poses).sort()).toEqual([...SKIN_POSES].sort());
+      expect(Object.keys(skin.art.sheets).sort()).toEqual(['jump', 'spring']);
+      const files = [
+        ...Object.values(skin.art.poses).map((p) => p.file),
+        ...Object.values(skin.art.sheets).map((s) => s.file),
+        skin.art.avatar,
+      ];
+      for (const f of files) expect(sprite(f).subarray(8, 12).toString(), f).toBe('WEBP');
+      expect(Object.keys(skinManifest(skin.id).images)).toHaveLength(files.length);
+    });
+
+    it(`${skin.id}: atlases hold every frame the animations use`, () => {
+      expect(skin.art.sheets.jump.count).toBe(3);
+      expect(skin.art.sheets.spring.count).toBe(8);
+      for (const s of Object.values(skin.art.sheets)) {
+        expect(s.refHeight).toBeGreaterThan(0);
+        expect(s.cols * Math.ceil(s.count / s.cols)).toBeGreaterThanOrEqual(s.count);
+      }
+    });
+  }
 });
 
-describe('sprite sheet cache-busting', () => {
-  it('sheet file names carry the hash of their content', () => {
-    for (const [name, sheet] of Object.entries(SPRITE_SHEETS)) {
-      const m = sheet.file.match(new RegExp(`^${name}-sheet\\.([0-9a-f]{8})\\.webp$`));
-      expect(m, sheet.file).not.toBeNull();
-      const bytes = readFileSync(
-        new URL(`../public/assets/sprites/${sheet.file}`, import.meta.url),
-      );
-      expect(createHash('sha256').update(bytes).digest('hex').slice(0, 8)).toBe(m[1]);
+describe('sprite cache-busting', () => {
+  it('generated file names carry the hash of their content', () => {
+    const hashed = SKINS.flatMap((s) => [
+      ...Object.values(s.art.sheets).map((x) => x.file),
+      ...(s.id === 'classic' ? [] : Object.values(s.art.poses).map((x) => x.file)),
+      s.art.avatar,
+    ]);
+    expect(hashed.length).toBeGreaterThan(10);
+    for (const file of hashed) {
+      const m = file.match(/\.([0-9a-f]{8})\.webp$/);
+      expect(m, file).not.toBeNull();
+      expect(createHash('sha256').update(sprite(file)).digest('hex').slice(0, 8)).toBe(m[1]);
     }
   });
 });
@@ -125,5 +146,24 @@ describe('AssetLoader', () => {
     await vi.runAllTimersAsync();
     await expect(p).resolves.toBeTruthy();
     expect(attempts).toBe(3);
+  });
+
+  it('loads each key once, even when requested twice at the same time', async () => {
+    let requests = 0;
+    vi.stubGlobal(
+      'Image',
+      class {
+        set src(_v) {
+          requests++;
+          queueMicrotask(() => this.onload());
+        }
+      },
+    );
+    const loader = new AssetLoader();
+    const manifest = { images: { a: 'a.webp', b: 'b.webp' } };
+    await Promise.all([loader.loadAll(manifest), loader.loadAll(manifest)]);
+    await loader.loadAll({ images: { a: 'a.webp' } });
+    expect(requests).toBe(2);
+    expect(loader.has('a') && loader.has('b')).toBe(true);
   });
 });

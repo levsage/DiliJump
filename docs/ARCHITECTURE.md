@@ -14,10 +14,10 @@ single `<canvas>`, with an HTML/CSS overlay for UI. Vite handles dev and build.
 │   HUD, screens/                │                                                           │
 │                                ▼                                                           │
 │                              World (simulation)                                            │
-│                               ├─ entities/  Player, Platform, Coin, Spring, Monster, …     │
+│                               ├─ entities/  Player, Platform, Coin, PowerUp, Spring, …     │
 │                               └─ systems/   LevelGenerator, Difficulty, Collision, Camera  │
 │                                                                                            │
-│   services/  Storage ─► Profile · Wallet · Settings   leaderboard/ Local | Supabase (live) │
+│   services/  Storage ─► Profile · Wallet · Skins · Settings  leaderboard/ Local | Supabase │
 └────────────────────────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -30,6 +30,20 @@ single `<canvas>`, with an HTML/CSS overlay for UI. Vite handles dev and build.
 | `rendering/` | The only code that touches `CanvasRenderingContext2D`.                             |
 | `services/`  | Persistence. Storage-agnostic, so a remote backend can be added later.             |
 | `ui/`        | The only code that touches the DOM (apart from `main.js`).                         |
+
+## Skins
+
+`config/skins.js` is the catalog (id, name, price, artwork). The artwork of
+the generated skins comes from `config/skins.json`, written by
+`tools/process_skins.py`. `SkinService` stores the owned skins and the equipped
+one, and pays through `WalletService.spend()`.
+
+`main.js` loads only the equipped skin at boot. `applySkin(id)` loads a skin
+through the `AssetLoader` (which de-duplicates keys) and calls
+`Renderer.setSkin()`, then emits `SKIN_CHANGED` so the HUD avatar follows.
+Every pose and atlas carries a `refHeight`: the number of image pixels that
+equal the mascot's draw height. Skins with wings or tails therefore use bigger
+canvases without drawing the body bigger.
 
 ## Game states
 

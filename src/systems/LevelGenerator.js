@@ -4,6 +4,7 @@ import {
   PLATFORM,
   PLATFORM_TYPES,
   COIN,
+  MAGNET,
   MONSTER,
   SCORING,
 } from '../config/constants.js';
@@ -11,6 +12,7 @@ import { Platform } from '../entities/Platform.js';
 import { Coin } from '../entities/Coin.js';
 import { Spring } from '../entities/Spring.js';
 import { Monster } from '../entities/Monster.js';
+import { PowerUp } from '../entities/PowerUp.js';
 import { getDifficulty } from './Difficulty.js';
 import { Random } from '../utils/random.js';
 
@@ -79,7 +81,7 @@ export class LevelGenerator {
     this.lastReachableY = y;
     this.lastX = x;
 
-    this.decorate(platform, d);
+    this.decorate(platform, d, this.scoreAt(y));
 
     // Breaking decoy between reachable platforms.
     if (gap > 90 && this.rng.chance(d.breakingChance)) {
@@ -105,19 +107,30 @@ export class LevelGenerator {
     }
   }
 
-  decorate(platform, d) {
+  decorate(platform, d, score = 0) {
     if (platform.type === PLATFORM_TYPES.VANISHING) return;
     const cx = platform.w / 2;
+    const attachedTo = platform.type === PLATFORM_TYPES.MOVING ? platform : null;
     if (this.rng.chance(d.springChance)) {
       const offset = this.rng.range(8, platform.w - 36);
       this.world.springs.push(new Spring(platform, offset));
-    } else if (this.rng.chance(d.coinChance)) {
-      this.world.coins.push(
-        new Coin(platform.x + cx, platform.y - 34, {
-          attachedTo: platform.type === PLATFORM_TYPES.MOVING ? platform : null,
-        }),
+    } else if (this.canSpawnMagnet(platform, score) && this.rng.chance(MAGNET.SPAWN_CHANCE)) {
+      this.world.powerUps.push(
+        new PowerUp(platform.x + cx, platform.y - MAGNET.SIZE / 2 - 22, { attachedTo }),
       );
+    } else if (this.rng.chance(d.coinChance)) {
+      this.world.coins.push(new Coin(platform.x + cx, platform.y - 34, { attachedTo }));
     }
+  }
+
+  /**
+   * Magnets are rare: not on the first screens, never on breaking platforms,
+   * never while one is active, and at most one waiting in the level.
+   */
+  canSpawnMagnet(platform, score) {
+    if (platform.type === PLATFORM_TYPES.BREAKING || score < MAGNET.MIN_SCORE) return false;
+    if (this.world.magnetTime > 0) return false;
+    return !this.world.powerUps.some((u) => !u.collected && !u.dead);
   }
 
   coinTrail(y) {

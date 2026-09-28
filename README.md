@@ -8,7 +8,7 @@
 Jump from platform to platform, grab **DLI coins**, dodge glitch bugs and climb the leaderboard.
 
 [![CI](https://github.com/levsage/DiliJump/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/levsage/DiliJump/actions/workflows/ci.yml)
-![version](https://img.shields.io/badge/version-3.0.1-1f5fc9)
+![version](https://img.shields.io/badge/version-3.1.0-1f5fc9)
 ![license](https://img.shields.io/badge/license-MIT-green)
 
 **▶ Play now: [dili-jump.vercel.app](https://dili-jump.vercel.app)** · mirror: [levsage.github.io/DiliJump](https://levsage.github.io/DiliJump/)
@@ -32,6 +32,8 @@ Jump from platform to platform, grab **DLI coins**, dodge glitch bugs and climb 
 | ⭐ **Player level**    | Every point you score is XP — all runs add up. Level shown next to your name on the leaderboard, XP bar in the menu, LEVEL UP! on game over       |
 | 🏆 **Leaderboard**     | Live global leaderboard (Supabase, realtime) — each player's best score, medals, dates and coins; offline fallback                                |
 | 🪙 **DLI coin bar**    | Collect coins stamped with the Dlicom logo; run total in the HUD and a persistent DLI wallet                                                      |
+| 🧲 **Coin magnet**     | Grab the magnet power-up and every coin nearby flies to you for 8 seconds (countdown in the HUD)                                                  |
+| 👕 **Dressing Room**   | Spend your DLI on character skins: **Neon Wings** (100 DLI) and **Golden Seraph** (200 DLI), each with its own full set of animations             |
 | 🧱 **Side walls**      | Solid glowing walls on both sides: the mascot can't slip off one edge and appear on the other                                                     |
 | 🧩 **Platforms**       | Normal, moving, breaking and vanishing platforms plus bouncy "boing" springs                                                                      |
 | 👾 **Enemies**         | Glitch bugs — stomp them or shoot them with energy bolts                                                                                          |
@@ -76,18 +78,19 @@ Full guide: **[docs/SUPABASE.md](docs/SUPABASE.md)**. Without these values the g
 
 ### Scripts
 
-| Command            | What it does                                              |
-| ------------------ | --------------------------------------------------------- |
-| `npm run dev`      | Start the Vite dev server with hot reload                 |
-| `npm run build`    | Production build into `dist/`                             |
-| `npm run preview`  | Serve the production build locally                        |
-| `npm test`         | Run unit tests (Vitest)                                   |
-| `npm run lint`     | Lint with ESLint                                          |
-| `npm run format`   | Format with Prettier                                      |
-| `npm run check`    | Lint + format check + tests + build (same as CI)          |
-| `npm run test:e2e` | Playwright smoke tests against the production build       |
-| `npm run sprites`  | Re-process pose renders in `art/poses/` into game sprites |
-| `npm run og-image` | Re-render the social preview card `public/og-image.jpg`   |
+| Command                 | What it does                                              |
+| ----------------------- | --------------------------------------------------------- |
+| `npm run dev`           | Start the Vite dev server with hot reload                 |
+| `npm run build`         | Production build into `dist/`                             |
+| `npm run preview`       | Serve the production build locally                        |
+| `npm test`              | Run unit tests (Vitest)                                   |
+| `npm run lint`          | Lint with ESLint                                          |
+| `npm run format`        | Format with Prettier                                      |
+| `npm run check`         | Lint + format check + tests + build (same as CI)          |
+| `npm run test:e2e`      | Playwright smoke tests against the production build       |
+| `npm run sprites`       | Re-process pose renders in `art/poses/` into game sprites |
+| `npm run sprites:skins` | Re-build the Dressing Room skins from `art/skins/`        |
+| `npm run og-image`      | Re-render the social preview card `public/og-image.jpg`   |
 
 ## 🗂️ Project structure
 
@@ -97,7 +100,8 @@ DiliJump/
 ├── art/                     # Source artwork (not shipped)
 │   ├── source/              # Original mascot reference & helmet highlight layer
 │   ├── poses/               # Generated pose renders (chroma-key backgrounds)
-│   └── sheets/              # Generated animation sheets (jump, spring)
+│   ├── sheets/              # Generated animation sheets (jump, spring)
+│   └── skins/               # Dressing Room skins: reference art + generated sheets per skin
 ├── docs/                    # Architecture, gameplay, branching, images
 ├── public/                  # Static files copied as-is into the build
 │   ├── assets/brand/        # Dlicom logo, DLI coin, favicons, app icons
@@ -107,12 +111,12 @@ DiliJump/
 │   └── manifest.webmanifest
 ├── supabase/                # Leaderboard SQL migrations + SQL tests
 ├── src/
-│   ├── config/              # constants.js (all tuning), assets.js (manifest)
+│   ├── config/              # constants.js (all tuning), assets.js + skins.js (manifests, skin catalog)
 │   ├── core/                # Game (state machine), World (simulation), GameLoop, Input, EventBus, AssetLoader
-│   ├── entities/            # Player, Platform, Coin, Spring, Monster, Projectile, Particle
+│   ├── entities/            # Player, Platform, Coin, PowerUp, Spring, Monster, Projectile, Particle
 │   ├── systems/             # LevelGenerator, Difficulty, Collision, Camera, AudioManager
 │   ├── rendering/           # Renderer, Background, brand (logo paths), palette
-│   ├── services/            # Storage, Profile, Wallet, Settings, PlayerIdentity, supabaseClient, leaderboard/
+│   ├── services/            # Storage, Profile, Wallet, Skins, Settings, PlayerIdentity, supabaseClient, leaderboard/
 │   ├── ui/                  # UIManager, HUD, screens/
 │   ├── styles/              # main.css
 │   └── main.js              # Composition root
@@ -135,6 +139,7 @@ See [`docs/BRANCHING.md`](docs/BRANCHING.md) for the full workflow.
 ## 🎨 Assets
 
 - **Mascot** — based on the official Dlicom mascot artwork. Poses were AI-generated from the reference and processed with [`tools/process_sprites.py`](tools/process_sprites.py) (chroma-key, despill, uniform scale, bottom-centre anchor).
+- **Skins** — Neon Wings and Golden Seraph were AI-generated from the uploaded character art (pose sheet, 3-pose jump, 8-frame spring each) and processed with [`tools/process_skins.py`](tools/process_skins.py), which scales every frame by its visor so all skins share the classic mascot's body size.
 - **Logo** — the official Dlicom logo (`public/assets/brand/dlicom-logo.svg`). It is also drawn as vector paths on every DLI coin (`src/rendering/brand.js`).
 
 <p align="center"><img src="docs/images/poses.png" alt="Mascot poses" /></p>

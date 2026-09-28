@@ -1,5 +1,6 @@
 import './styles/main.css';
-import { ASSETS, PLAYER_POSES, SPRITE_SHEETS } from './config/assets.js';
+import { ASSETS } from './config/assets.js';
+import { DEFAULT_SKIN, getSkin, skinManifest, skinPreviewManifest } from './config/skins.js';
 import { APP } from './config/constants.js';
 import { AssetLoader } from './core/AssetLoader.js';
 import { Input } from './core/Input.js';
@@ -9,6 +10,7 @@ import { AudioManager } from './systems/AudioManager.js';
 import { Storage } from './services/Storage.js';
 import { ProfileService } from './services/ProfileService.js';
 import { WalletService } from './services/WalletService.js';
+import { SkinService } from './services/SkinService.js';
 import { createLeaderboard } from './services/leaderboard/index.js';
 import { SettingsService } from './services/SettingsService.js';
 import { UIManager } from './ui/UIManager.js';
@@ -25,6 +27,7 @@ async function bootstrap() {
   const storage = new Storage();
   const profile = new ProfileService(storage);
   const wallet = new WalletService(storage);
+  const skins = new SkinService(storage, wallet);
   const leaderboard = createLeaderboard(storage);
   leaderboard.setCurrentName(profile.name);
   const settings = new SettingsService(storage);
@@ -47,17 +50,47 @@ async function bootstrap() {
   const renderer = new Renderer(canvas, assets);
 
   const game = new Game({ events, input, renderer, audio, profile, wallet, leaderboard });
-  const ui = new UIManager({ game, events, profile, wallet, leaderboard, settings, audio });
+  /** Download a skin's artwork (if needed) and put it on the mascot. */
+  const applySkin = async (id) => {
+    await assets.loadAll(skinManifest(id));
+    renderer.setSkin(getSkin(id));
+    events.emit(EVENTS.SKIN_CHANGED, id);
+  };
+  const ui = new UIManager({
+    game,
+    events,
+    profile,
+    wallet,
+    leaderboard,
+    settings,
+    audio,
+    skins,
+    applySkin,
+  });
 
   registerServiceWorker({ onUpdate: () => events.emit(EVENTS.UPDATE_READY) });
 
-  await assets.loadAll(ASSETS, (p) => ui.setProgress(p));
-  renderer.cachePoses(PLAYER_POSES);
-  renderer.cacheSheets(SPRITE_SHEETS);
+  const progress = (p) => ui.setProgress(p);
+  const withSkin = (id) => ({ images: { ...ASSETS.images, ...skinManifest(id).images } });
+  let skinId = skins.equipped;
+  try {
+    await assets.loadAll(withSkin(skinId), progress);
+  } catch (err) {
+    if (skinId === DEFAULT_SKIN) throw err;
+    // a bought skin that can't be downloaded right now must not block the game
+    console.warn(`[skins] "${skinId}" unavailable, using ${DEFAULT_SKIN}:`, err.message);
+    skinId = DEFAULT_SKIN;
+    await assets.loadAll(withSkin(skinId), progress);
+  }
+  renderer.setSkin(getSkin(skinId));
+  events.emit(EVENTS.SKIN_CHANGED, skinId);
+  // Dressing Room previews: nice to have, never blocking
+  assets.loadAll(skinPreviewManifest()).catch(() => {});
   game.boot();
 
   // Handy for debugging in the browser console.
-  if (import.meta.env?.DEV) window.__DILIJUMP__ = { game, profile, wallet, leaderboard, audio };
+  if (import.meta.env?.DEV)
+    window.__DILIJUMP__ = { game, profile, wallet, leaderboard, audio, skins };
   console.info(`%c${APP.NAME} v${APP.VERSION}`, 'color:#5fb0f5;font-weight:bold');
 }
 

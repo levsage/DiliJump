@@ -3,7 +3,15 @@ import { LevelGenerator } from '../src/systems/LevelGenerator.js';
 import { getDifficulty } from '../src/systems/Difficulty.js';
 import { PHYSICS, PLATFORM, PLATFORM_TYPES, PLAYFIELD } from '../src/config/constants.js';
 
-const makeWorld = () => ({ platforms: [], coins: [], springs: [], monsters: [], originY: 740 });
+const makeWorld = () => ({
+  platforms: [],
+  coins: [],
+  powerUps: [],
+  springs: [],
+  monsters: [],
+  originY: 740,
+  magnetTime: 0,
+});
 
 describe('Difficulty', () => {
   it('never allows gaps above the jump apex', () => {

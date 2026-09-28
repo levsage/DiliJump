@@ -45,9 +45,11 @@ test('menu loads cleanly with the release version and a CSP', async ({ page }) =
     'content',
     /og-image\.jpg$/,
   );
-  // all sprites decoded
+  // all sprites decoded (images filled in later, e.g. the Dressing Room preview, have no src yet)
   const broken = await page.evaluate(() =>
-    [...document.images].filter((i) => i.complete && i.naturalWidth === 0).map((i) => i.src),
+    [...document.images]
+      .filter((i) => i.getAttribute('src') && i.complete && i.naturalWidth === 0)
+      .map((i) => i.src),
   );
   expect(broken).toEqual([]);
   expect(errors).toEqual([]);
@@ -125,6 +127,53 @@ test('leaderboard opens and closes', async ({ page }) => {
   await expect(page.locator(visible('screen-leaderboard'))).toBeVisible();
   await page.click(`${visible('screen-leaderboard')} [data-action="close-leaderboard"]`);
   await expect(page.locator(visible('screen-menu'))).toBeVisible();
+  expect(errors).toEqual([]);
+});
+
+test('dressing room: buy a skin with DLI, wear it, and it stays after a reload', async ({
+  page,
+}) => {
+  const errors = watchErrors(page);
+  await page.addInitScript(() => {
+    // 150 DLI on this device (only on the first visit, so the purchase survives reload)
+    const key = 'dilijump:v1:wallet';
+    if (!localStorage.getItem(key)) {
+      localStorage.setItem(key, JSON.stringify({ balance: 150, lifetime: 150 }));
+    }
+  });
+  await openMenu(page);
+  await page.fill('#name-input', 'Skin Tester');
+  await page.locator(visible('screen-menu')).locator('[data-action="wardrobe"]').click();
+  const room = page.locator(visible('screen-wardrobe'));
+  await expect(room).toBeVisible();
+  await expect(room.locator('[data-bind="wardrobe-wallet"]')).toHaveText('150');
+
+  const card = (id) => room.locator(`.skin-card[data-skin="${id}"] .skin-card__btn`);
+  await expect(card('classic')).toContainText('Wearing');
+  await expect(card('golden')).toContainText('Need 50 more');
+  await expect(card('golden')).toBeDisabled();
+
+  // two taps: price → confirm
+  await card('wings').click();
+  await expect(card('wings')).toContainText('Confirm');
+  await expect(room.locator('[data-bind="wardrobe-wallet"]')).toHaveText('150');
+  await card('wings').click();
+  await expect(card('wings')).toContainText('Wearing');
+  await expect(room.locator('[data-bind="wardrobe-wallet"]')).toHaveText('50');
+  await expect(room.locator('[data-bind="wardrobe-preview"]')).toHaveAttribute(
+    'src',
+    /skins\/wings\/idle\./,
+  );
+  await room.locator('[data-action="close-wardrobe"]').click();
+  await expect(page.locator('[data-bind="wallet"]')).toHaveText('50');
+
+  // a reload keeps the skin and the balance; the HUD avatar shows it
+  await page.reload();
+  await expect(page.locator(visible('screen-menu'))).toBeVisible();
+  await expect(page.locator('[data-bind="wallet"]')).toHaveText('50');
+  await page.locator(visible('screen-menu')).locator('[data-action="play"]').click();
+  await expect(page.locator('.namebar__avatar')).toHaveAttribute('src', /skins\/wings\/avatar\./);
+  await leaveRunToMenu(page);
   expect(errors).toEqual([]);
 });
 

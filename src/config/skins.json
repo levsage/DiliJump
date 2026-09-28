@@ -1,0 +1,99 @@
+{
+  "classic": {
+    "avatar": "skins/classic/avatar.0e0e54c5.webp"
+  },
+  "wings": {
+    "poses": {
+      "idle": {
+        "file": "skins/wings/idle.d1f67953.webp",
+        "refHeight": 320,
+        "w": 323,
+        "h": 309
+      },
+      "shoot": {
+        "file": "skins/wings/shoot.d2912407.webp",
+        "refHeight": 320,
+        "w": 323,
+        "h": 309
+      },
+      "hurt": {
+        "file": "skins/wings/hurt.c722cbab.webp",
+        "refHeight": 320,
+        "w": 323,
+        "h": 309
+      },
+      "cheer": {
+        "file": "skins/wings/cheer.b415a040.webp",
+        "refHeight": 320,
+        "w": 323,
+        "h": 309
+      }
+    },
+    "sheets": {
+      "jump": {
+        "file": "skins/wings/jump-sheet.847fd41e.webp",
+        "cell": [269, 231],
+        "cols": 3,
+        "count": 3,
+        "anchor": "bottom-center",
+        "refHeight": 240.0
+      },
+      "spring": {
+        "file": "skins/wings/spring-sheet.f7c239fe.webp",
+        "cell": [320, 249],
+        "cols": 4,
+        "count": 8,
+        "anchor": "bottom-center",
+        "refHeight": 240.0
+      }
+    },
+    "avatar": "skins/wings/avatar.7c1eb178.webp"
+  },
+  "golden": {
+    "poses": {
+      "idle": {
+        "file": "skins/golden/idle.01d1e7b1.webp",
+        "refHeight": 320,
+        "w": 339,
+        "h": 361
+      },
+      "shoot": {
+        "file": "skins/golden/shoot.775588c1.webp",
+        "refHeight": 320,
+        "w": 339,
+        "h": 361
+      },
+      "hurt": {
+        "file": "skins/golden/hurt.df81a32f.webp",
+        "refHeight": 320,
+        "w": 339,
+        "h": 361
+      },
+      "cheer": {
+        "file": "skins/golden/cheer.5ebda6af.webp",
+        "refHeight": 320,
+        "w": 339,
+        "h": 361
+      }
+    },
+    "sheets": {
+      "jump": {
+        "file": "skins/golden/jump-sheet.20b49662.webp",
+        "cell": [263, 276],
+        "cols": 3,
+        "count": 3,
+        "anchor": "bottom-center",
+        "refHeight": 240.0
+      },
+      "spring": {
+        "file": "skins/golden/spring-sheet.e0cfcf85.webp",
+        "cell": [343, 361],
+        "cols": 4,
+        "count": 8,
+        "anchor": "bottom-center",
+        "refHeight": 240.0
+      }
+    },
+    "avatar": "skins/golden/avatar.b34d290f.webp"
+  }
+}

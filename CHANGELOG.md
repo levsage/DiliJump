@@ -6,6 +6,26 @@ and the project uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [3.1.0] - 2026-09-28
+
+### Added
+
+- **🧲 Coin magnet power-up.** Now and then a magnet waits on a platform (from 300 points on, at most one at a time). Grab it and every coin within reach flies to you for **8 seconds**. A HUD badge shows the countdown with a draining bar, pulsing rings circle the mascot, and both blink during the last 2 seconds. Coins already flying keep coming when it runs out.
+- **👕 Dressing Room.** A new menu button opens it. It shows your DLI wallet, a preview of every character and a card per skin:
+  - **Classic**: free, the original caped hero.
+  - **Neon Wings** (100 DLI): the mascot with glowing lime-green feathered wings.
+  - **Golden Seraph** (200 DLI): gold armor, galaxy wings and a dragon tail.
+  - Buying takes two taps (price, then **Confirm**) so no coins are spent by accident. The confirmation expires after 4 s. A skin you can't afford yet shows how many DLI you still need. A bought skin is worn right away, and you can switch back any time.
+  - Skins are purely cosmetic: the same hitbox and jump for everyone.
+  - The skin you wear is used everywhere: in game, in the menu demo, as the HUD avatar and on the game-over screen. Purchases and the worn skin are saved on this device, like the wallet.
+- **Full animation set per skin.** Every skin has its own idle, shoot, hurt and cheer poses, the 3-pose jump and the 8-frame spring super-jump, generated from the uploaded character art with the background removed. The new `tools/process_skins.py` (`npm run sprites:skins`) builds them and scales every frame by its visor, so all skins share the classic mascot's body size.
+- Round HUD avatars are now proper head crops (for the classic mascot too).
+
+### Changed
+
+- Only the equipped skin is downloaded at start-up. The Dressing Room previews load in the background, and another skin loads when you first wear it. If a bought skin can't be loaded (offline, not cached), the game starts with the classic mascot instead of failing.
+- `WalletService.spend()` pays for purchases. Coins stay client-side and are never validated by the server.
+
 ## [3.0.1] - 2026-09-26
 
 ### Fixed
@@ -140,7 +160,8 @@ The first production release: everything from the unreleased 1.3 line (new anima
 - Keyboard and touch controls, responsive layout, PWA manifest.
 - Tooling: Vite, ESLint, Prettier, Vitest, GitHub Actions CI and GitHub Pages deploy.
 
-[Unreleased]: https://github.com/levsage/DiliJump/compare/v3.0.1...HEAD
+[Unreleased]: https://github.com/levsage/DiliJump/compare/v3.1.0...HEAD
+[3.1.0]: https://github.com/levsage/DiliJump/compare/v3.0.1...v3.1.0
 [3.0.1]: https://github.com/levsage/DiliJump/compare/v3.0.0...v3.0.1
 [3.0.0]: https://github.com/levsage/DiliJump/compare/v2.0.0...v3.0.0
 [2.0.0]: https://github.com/levsage/DiliJump/compare/v1.2.1...v2.0.0

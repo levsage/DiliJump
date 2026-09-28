@@ -1,15 +1,16 @@
 import { $, bound, setText } from '../dom.js';
 import { formatNumber } from '../../utils/format.js';
-import { ASSETS } from '../../config/assets.js';
+import { skinPoseScale, skinPoseUrl } from '../../config/skins.js';
 import { levelProgress } from '../../systems/PlayerLevel.js';
 import { renderXpBar } from '../levelView.js';
 
 /** End-of-run scoreboard. Re-populated when the leaderboard rank arrives. */
 export class GameOverScreen {
-  constructor({ profile, wallet }) {
+  constructor({ profile, wallet, skins }) {
     this.root = $('#screen-gameover');
     this.profile = profile;
     this.wallet = wallet;
+    this.skins = skins;
   }
 
   populate({ score, coins, isBest, rank, height, pending, online, queued, ...lvl }) {
@@ -22,7 +23,12 @@ export class GameOverScreen {
 
     const celebrate = Boolean(isBest);
     setText('result-title', celebrate ? 'New Record!' : 'Game Over', r);
-    bound('result-hero', r)[0].src = ASSETS.images[celebrate ? 'player.cheer' : 'player.hurt'];
+    const hero = bound('result-hero', r)[0];
+    const skin = this.skins.equipped;
+    const pose = celebrate ? 'cheer' : 'hurt';
+    hero.src = skinPoseUrl(skin, pose);
+    hero.style.setProperty('--sprite-h', String(skinPoseScale(skin, pose)));
+    hero.dataset.skin = skin;
     r.querySelector('.scoreboard').classList.toggle('is-record', celebrate);
 
     this.populateLevel({ score, ...lvl });

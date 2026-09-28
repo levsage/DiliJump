@@ -134,6 +134,18 @@ export const COIN = Object.freeze({
   SCORE_BONUS: 10,
 });
 
+/** Magnet power-up: grab it and nearby coins fly to you for a few seconds. */
+export const MAGNET = Object.freeze({
+  DURATION: 8, // seconds
+  WARN_TIME: 2, // the field blinks during the last seconds
+  RADIUS: 260, // coins closer than this (px from the body) are pulled in
+  ACCEL: 3200, // px/s² towards the player
+  MAX_SPEED: 1100,
+  SPAWN_CHANCE: 0.035, // per decorated platform
+  MIN_SCORE: 300, // no magnets on the very first screens
+  SIZE: 30,
+});
+
 export const SPRING = Object.freeze({
   WIDTH: 32,
   HEIGHT: 18,

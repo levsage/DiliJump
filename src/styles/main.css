@@ -140,7 +140,6 @@ input {
   width: 8cqw;
   height: 8cqw;
   object-fit: cover;
-  object-position: 50% 8%;
   border-radius: 50%;
   background: linear-gradient(160deg, var(--c-sky-400), var(--c-sky-700));
   border: 2px solid var(--c-white);
@@ -219,6 +218,74 @@ input {
   font-size: 0.7em;
   font-weight: 800;
   opacity: 0.85;
+}
+
+/* ---------- Magnet power-up badge ---------- */
+.hud__row--power {
+  justify-content: flex-end;
+  min-height: 0;
+}
+
+.powerbar {
+  display: flex;
+  align-items: center;
+  gap: 1.4cqw;
+  padding: 0.8cqw 2.4cqw 0.8cqw 1.2cqw;
+  border-radius: 999px;
+  background: linear-gradient(180deg, rgba(255, 90, 110, 0.32), rgba(120, 10, 30, 0.45));
+  border: 1px solid rgba(255, 140, 155, 0.8);
+  backdrop-filter: blur(6px);
+  font-size: 0.8em;
+  font-weight: 800;
+}
+
+.powerbar[hidden] {
+  display: none;
+}
+
+.powerbar__icon {
+  width: 5.5cqw;
+  height: 5.5cqw;
+}
+
+.powerbar__label {
+  letter-spacing: 0.08em;
+  font-size: 0.8em;
+}
+
+.powerbar__track {
+  width: 14cqw;
+  height: 1.6cqw;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.35);
+  overflow: hidden;
+}
+
+.powerbar__fill {
+  display: block;
+  height: 100%;
+  width: calc(var(--left, 1) * 100%);
+  background: linear-gradient(90deg, #ff5a6e, #ffc2ca);
+  transition: width 1s linear;
+}
+
+.powerbar__time {
+  min-width: 5cqw;
+  text-align: right;
+}
+
+.powerbar.is-ending {
+  animation: blink 0.5s steps(2, jump-none) infinite;
+}
+
+.powerbar.is-pulse {
+  animation: pop 0.3s ease-out;
+}
+
+@keyframes blink {
+  50% {
+    opacity: 0.45;
+  }
 }
 
 .coinbar.is-pulse {
@@ -664,8 +731,11 @@ input {
 
 /* Scoreboard */
 .scoreboard__hero {
-  width: 26cqw;
-  margin-top: -16cqw;
+  /* same body size for every skin: --sprite-h = canvas height / body height */
+  height: calc(33.5cqw * var(--sprite-h, 1));
+  width: auto;
+  max-width: 60cqw;
+  margin-top: calc(-16cqw - 33.5cqw * (var(--sprite-h, 1) - 1));
   filter: drop-shadow(0 6px 10px rgba(0, 0, 0, 0.4));
   animation: float 2.4s ease-in-out infinite;
 }
@@ -1065,4 +1135,172 @@ input {
   .xpbar__fill {
     transition: none;
   }
+}
+
+/* ---------- Dressing Room ---------- */
+.wardrobe {
+  max-height: 94%;
+  overflow-y: auto;
+  gap: 1.8cqw;
+  padding-top: 4cqw;
+}
+
+.wardrobe__wallet {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 1.4cqw;
+  padding: 0.8cqw 3cqw 0.8cqw 1cqw;
+  border-radius: 999px;
+  background: linear-gradient(180deg, rgba(255, 210, 63, 0.28), rgba(201, 131, 0, 0.35));
+  border: 1px solid rgba(255, 210, 63, 0.7);
+  font-weight: 800;
+}
+
+.wardrobe__wallet img {
+  width: 6cqw;
+  height: 6cqw;
+}
+
+.wardrobe__stage {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.6cqw;
+  padding: 1cqw 0 0.6cqw;
+  border-radius: var(--radius-m);
+  background: radial-gradient(ellipse at 50% 85%, rgba(95, 176, 245, 0.45), transparent 70%);
+}
+
+.wardrobe__preview {
+  height: calc(23cqw * var(--sprite-h, 1));
+  width: auto;
+  max-width: 64cqw;
+  filter: drop-shadow(0 6px 10px rgba(0, 0, 0, 0.4));
+  animation: float 2.4s ease-in-out infinite;
+}
+
+.wardrobe__caption {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  line-height: 1.2;
+}
+
+.wardrobe__caption b {
+  font-size: 1.1em;
+}
+
+.wardrobe__caption span {
+  font-size: 0.75em;
+  opacity: 0.8;
+}
+
+.wardrobe__error {
+  margin: 0;
+  color: var(--c-danger);
+  font-size: 0.8em;
+  text-align: center;
+}
+
+.wardrobe__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 1.6cqw;
+}
+
+.skin-card {
+  display: grid;
+  grid-template-columns: 12cqw 1fr auto;
+  align-items: center;
+  gap: 2.4cqw;
+  padding: 1cqw 2cqw;
+  border-radius: var(--radius-m);
+  background: var(--glass);
+  border: 2px solid var(--border);
+  cursor: pointer;
+}
+
+.skin-card.is-selected {
+  border-color: rgba(127, 212, 255, 0.9);
+  background: rgba(31, 95, 201, 0.55);
+}
+
+.skin-card__img {
+  width: 12cqw;
+  height: 12cqw;
+  object-fit: contain;
+}
+
+.skin-card__info {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.2;
+  min-width: 0;
+}
+
+.skin-card__info small {
+  font-size: 0.72em;
+  opacity: 0.8;
+}
+
+.skin-card.is-owned .skin-card__info small {
+  color: var(--c-ok);
+  opacity: 1;
+}
+
+.skin-card__btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 1cqw;
+  padding: 1.4cqw 3cqw;
+  border-radius: 999px;
+  border: 0;
+  font: inherit;
+  font-size: 0.8em;
+  font-weight: 800;
+  color: var(--c-ink);
+  background: linear-gradient(180deg, #fff, #cfe6ff);
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.skin-card__btn img {
+  width: 4.6cqw;
+  height: 4.6cqw;
+}
+
+.skin-card__btn--buy {
+  background: linear-gradient(180deg, #ffe27a, var(--c-coin));
+}
+
+.skin-card__btn--confirm {
+  background: linear-gradient(180deg, #7dffb4, var(--c-ok));
+  animation: pop 0.3s ease-out;
+}
+
+.skin-card__btn--worn {
+  background: transparent;
+  color: var(--c-ok);
+  border: 1px solid var(--c-ok);
+}
+
+.skin-card__btn--locked,
+.skin-card__btn--busy {
+  background: rgba(255, 255, 255, 0.15);
+  color: rgba(255, 255, 255, 0.75);
+  cursor: default;
+}
+
+.wardrobe__note {
+  margin: 0;
+  font-size: 0.72em;
+  opacity: 0.75;
+  text-align: center;
 }

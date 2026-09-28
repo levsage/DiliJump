@@ -2,6 +2,7 @@ import { EVENTS } from '../core/EventBus.js';
 import { $, bound, setText, pulse } from './dom.js';
 import { levelLabel } from './levelView.js';
 import { formatNumber } from '../utils/format.js';
+import { MAGNET } from '../config/constants.js';
 
 /**
  * In-game overlay: custom name bar, live score (+ personal best) and the
@@ -13,10 +14,28 @@ export class HUD {
     this.profile = profile;
     this.scoreEl = bound('score', this.root)[0];
     this.coinEl = $('.coinbar', this.root);
+    this.magnetEl = $('.powerbar', this.root);
+    this.avatarEl = $('.namebar__avatar', this.root);
     this.lastScore = -1;
 
     events.on(EVENTS.SCORE, (score) => this.setScore(score));
     events.on(EVENTS.HUD_COINS, (n) => this.setCoins(n));
+    events.on(EVENTS.HUD_MAGNET, (s) => this.setMagnet(s));
+  }
+
+  setAvatar(src) {
+    this.avatarEl.src = src;
+  }
+
+  /** Magnet countdown badge (whole seconds left; 0 hides it). */
+  setMagnet(seconds) {
+    const el = this.magnetEl;
+    el.hidden = seconds <= 0;
+    if (seconds <= 0) return;
+    setText('magnet-time', `${seconds}s`, el);
+    el.style.setProperty('--left', String(seconds / MAGNET.DURATION));
+    el.classList.toggle('is-ending', seconds <= MAGNET.WARN_TIME);
+    if (seconds === MAGNET.DURATION) pulse(el);
   }
 
   refreshProfile() {
