@@ -5,96 +5,96 @@
   "wings": {
     "poses": {
       "idle": {
-        "file": "skins/wings/idle.d1f67953.webp",
+        "file": "skins/wings/idle.b445fa73.webp",
         "refHeight": 320,
-        "w": 323,
-        "h": 309
+        "w": 373,
+        "h": 343
       },
       "shoot": {
-        "file": "skins/wings/shoot.d2912407.webp",
+        "file": "skins/wings/shoot.68ae97f4.webp",
         "refHeight": 320,
-        "w": 323,
-        "h": 309
+        "w": 373,
+        "h": 343
       },
       "hurt": {
-        "file": "skins/wings/hurt.c722cbab.webp",
+        "file": "skins/wings/hurt.b8db018e.webp",
         "refHeight": 320,
-        "w": 323,
-        "h": 309
+        "w": 373,
+        "h": 343
       },
       "cheer": {
-        "file": "skins/wings/cheer.b415a040.webp",
+        "file": "skins/wings/cheer.b04e23a8.webp",
         "refHeight": 320,
-        "w": 323,
-        "h": 309
+        "w": 373,
+        "h": 343
       }
     },
     "sheets": {
       "jump": {
-        "file": "skins/wings/jump-sheet.847fd41e.webp",
-        "cell": [269, 231],
+        "file": "skins/wings/jump-sheet.98b527be.webp",
+        "cell": [247, 269],
         "cols": 3,
         "count": 3,
         "anchor": "bottom-center",
         "refHeight": 240.0
       },
       "spring": {
-        "file": "skins/wings/spring-sheet.f7c239fe.webp",
-        "cell": [320, 249],
+        "file": "skins/wings/spring-sheet.955dcf63.webp",
+        "cell": [309, 295],
         "cols": 4,
         "count": 8,
         "anchor": "bottom-center",
         "refHeight": 240.0
       }
     },
-    "avatar": "skins/wings/avatar.7c1eb178.webp"
+    "avatar": "skins/wings/avatar.e8151229.webp"
   },
   "golden": {
     "poses": {
       "idle": {
-        "file": "skins/golden/idle.01d1e7b1.webp",
+        "file": "skins/golden/idle.91e844a6.webp",
         "refHeight": 320,
         "w": 339,
-        "h": 361
+        "h": 327
       },
       "shoot": {
-        "file": "skins/golden/shoot.775588c1.webp",
+        "file": "skins/golden/shoot.067c6096.webp",
         "refHeight": 320,
         "w": 339,
-        "h": 361
+        "h": 327
       },
       "hurt": {
-        "file": "skins/golden/hurt.df81a32f.webp",
+        "file": "skins/golden/hurt.8eca8587.webp",
         "refHeight": 320,
         "w": 339,
-        "h": 361
+        "h": 327
       },
       "cheer": {
-        "file": "skins/golden/cheer.5ebda6af.webp",
+        "file": "skins/golden/cheer.de34cd3e.webp",
         "refHeight": 320,
         "w": 339,
-        "h": 361
+        "h": 327
       }
     },
     "sheets": {
       "jump": {
-        "file": "skins/golden/jump-sheet.20b49662.webp",
-        "cell": [263, 276],
+        "file": "skins/golden/jump-sheet.72aeba50.webp",
+        "cell": [248, 249],
         "cols": 3,
         "count": 3,
         "anchor": "bottom-center",
         "refHeight": 240.0
       },
       "spring": {
-        "file": "skins/golden/spring-sheet.e0cfcf85.webp",
-        "cell": [343, 361],
+        "file": "skins/golden/spring-sheet.da29c586.webp",
+        "cell": [283, 275],
         "cols": 4,
         "count": 8,
         "anchor": "bottom-center",
         "refHeight": 240.0
       }
     },
-    "avatar": "skins/golden/avatar.b34d290f.webp"
+    "avatar": "skins/golden/avatar.410c698f.webp"
   },
   "sunfire": {
     "poses": {

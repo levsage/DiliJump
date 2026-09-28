@@ -85,7 +85,9 @@ SKINS = {
                # spring-a frame 2 strayed from the flight pose: frame 3 is used twice
                "sheets": {**_SHEETS, "spring": [("spring-a", 0), ("spring-a", 1), ("spring-a", 3)]
                           + _SHEETS["spring"][3:]},
-               "visor_skip": _SKIP, "scale_mul": _TUCK},
+               "visor_skip": _SKIP,
+               # the jump sheet's visors read small next to its bulky helmets
+               "scale_mul": {**_TUCK, ("jump", 0): 0.9, ("jump", 1): 0.9, ("jump", 2): 0.9}},
     "sunfire": {"visor": "navy", "sources": _GRID, "poses": _POSES, "sheets": _SHEETS,
                 "visor_skip": _SKIP, "scale_mul": _TUCK},
     "galaxy": {"visor": "sky", "sources": _GRID, "poses": _POSES,
