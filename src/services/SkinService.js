@@ -1,4 +1,4 @@
-import { DEFAULT_SKIN, SKINS, getSkin } from '../config/skins.js';
+import { DEFAULT_SKIN, RETIRED_SKINS, SKINS, getSkin } from '../config/skins.js';
 
 /**
  * Dressing Room state: which skins the player owns and which one is worn.
@@ -10,11 +10,16 @@ export class SkinService {
     this.storage = storage;
     this.wallet = wallet;
     const saved = storage.get('skins', {});
-    const owned = Array.isArray(saved.owned) ? saved.owned.filter((id) => getSkin(id)) : [];
+    const list = Array.isArray(saved.owned) ? saved.owned : [];
+    // skins that were removed from the shop: give the DLI back, once
+    const retired = list.filter((id) => Object.hasOwn(RETIRED_SKINS, id));
+    for (const id of retired) wallet.refund(RETIRED_SKINS[id]);
+    const owned = list.filter((id) => getSkin(id));
     // free skins are always owned
     for (const s of SKINS) if (s.price === 0 && !owned.includes(s.id)) owned.push(s.id);
     this.owned = new Set(owned);
     this.equipped = this.owned.has(saved.equipped) ? saved.equipped : DEFAULT_SKIN;
+    if (retired.length) this.save(); // forget them, so the refund happens only once
   }
 
   owns(id) {

@@ -96,53 +96,6 @@
     },
     "avatar": "skins/golden/avatar.410c698f.webp"
   },
-  "sunfire": {
-    "poses": {
-      "idle": {
-        "file": "skins/sunfire/idle.7d11f952.webp",
-        "refHeight": 320,
-        "w": 368,
-        "h": 385
-      },
-      "shoot": {
-        "file": "skins/sunfire/shoot.65a1d43c.webp",
-        "refHeight": 320,
-        "w": 368,
-        "h": 385
-      },
-      "hurt": {
-        "file": "skins/sunfire/hurt.c548d21c.webp",
-        "refHeight": 320,
-        "w": 368,
-        "h": 385
-      },
-      "cheer": {
-        "file": "skins/sunfire/cheer.a58290e1.webp",
-        "refHeight": 320,
-        "w": 368,
-        "h": 385
-      }
-    },
-    "sheets": {
-      "jump": {
-        "file": "skins/sunfire/jump-sheet.872cb9c2.webp",
-        "cell": [281, 295],
-        "cols": 3,
-        "count": 3,
-        "anchor": "bottom-center",
-        "refHeight": 240.0
-      },
-      "spring": {
-        "file": "skins/sunfire/spring-sheet.59e6fc80.webp",
-        "cell": [295, 315],
-        "cols": 4,
-        "count": 8,
-        "anchor": "bottom-center",
-        "refHeight": 240.0
-      }
-    },
-    "avatar": "skins/sunfire/avatar.737614c4.webp"
-  },
   "galaxy": {
     "poses": {
       "idle": {

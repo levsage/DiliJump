@@ -88,8 +88,6 @@ SKINS = {
                "visor_skip": _SKIP,
                # the jump sheet's visors read small next to its bulky helmets
                "scale_mul": {**_TUCK, ("jump", 0): 0.9, ("jump", 1): 0.9, ("jump", 2): 0.9}},
-    "sunfire": {"visor": "navy", "sources": _GRID, "poses": _POSES, "sheets": _SHEETS,
-                "visor_skip": _SKIP, "scale_mul": _TUCK},
     "galaxy": {"visor": "sky", "sources": _GRID, "poses": _POSES,
                # spring-a frame 2 strayed from the flight pose; frames 2 and 3 are the
                # same classic pose, so frame 3 is used twice
@@ -125,7 +123,7 @@ def visor_box(rgba, kind, top_only=1.0):
         d = np.maximum(mx - mn, 1e-6)
         hue = np.where(mx == b, 240 + 60 * (r - g) / d, np.where(mx == g, 120 + 60 * (b - r) / d, 0))
         m = solid & (mx == b) & (hue > 196) & (hue < 226) & (v > 0.3) & (v < 0.85) & (s > 0.4)
-    elif kind == "navy":  # dark saturated blue (classic / wings / sunfire)
+    elif kind == "navy":  # dark saturated blue (classic / wings)
         m = solid & (b > r + 0.2) & (v > 0.25) & (v < 0.75) & (s > 0.45)
     else:  # desaturated grey-blue (golden)
         m = solid & (b > r + 0.08) & (b >= g - 0.02) & (v > 0.45) & (v < 0.9) & (s > 0.12) & (s < 0.5)

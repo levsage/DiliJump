@@ -5,6 +5,9 @@ import { drawLogo } from './brand.js';
 import { Background } from './Background.js';
 import { springStretch } from '../entities/animation.js';
 
+/** Opacity of platforms / springs / monsters that no longer count (behind the controls). */
+const HIDDEN_ALPHA = 0.35;
+
 /**
  * Draws the world. Owns the canvas, handles DPR-aware resizing and keeps a
  * fixed logical resolution (VIEW.WIDTH × VIEW.HEIGHT), letter-boxed to fit.
@@ -66,11 +69,20 @@ export class Renderer {
     const bottom = camera.y + VIEW.HEIGHT + 80;
     const visible = (y) => y > top && y < bottom;
 
-    for (const p of world.platforms) if (visible(p.y)) this.drawPlatform(p);
-    for (const s of world.springs) if (visible(s.y)) this.drawSpring(s);
+    // below the landing floor (behind the controls) nothing counts any more:
+    // draw it faded so what you see is what you can land on
+    const floor = world.landingFloor ?? Infinity;
+    const faded = (y, draw) => {
+      if (y <= floor) return draw();
+      ctx.globalAlpha = HIDDEN_ALPHA;
+      draw();
+      ctx.globalAlpha = 1;
+    };
+    for (const p of world.platforms) if (visible(p.y)) faded(p.y, () => this.drawPlatform(p));
+    for (const s of world.springs) if (visible(s.y)) faded(s.y, () => this.drawSpring(s));
     for (const u of world.powerUps) if (visible(u.y)) this.drawMagnetPickup(u);
     for (const c of world.coins) if (visible(c.y)) this.drawCoin(c);
-    for (const m of world.monsters) if (visible(m.y)) this.drawMonster(m);
+    for (const m of world.monsters) if (visible(m.y)) faded(m.y, () => this.drawMonster(m));
     for (const b of world.projectiles) this.drawProjectile(b);
     this.drawParticles(world.particles.items);
     if (world.player && world.magnetTime > 0) this.drawMagnetField(world.player, world.magnetTime);
