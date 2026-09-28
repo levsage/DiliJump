@@ -77,7 +77,11 @@ SKINS = {
                "visor_skip": _SKIP},
     "sunfire": {"visor": "navy", "sources": _GRID, "poses": _POSES, "sheets": _SHEETS,
                 "visor_skip": _SKIP},
-    "galaxy": {"visor": "sky", "sources": _GRID, "poses": _POSES, "sheets": _SHEETS,
+    "galaxy": {"visor": "sky", "sources": _GRID, "poses": _POSES,
+               # spring-a frame 2 strayed from the flight pose; frames 2 and 3 are the
+               # same classic pose, so frame 3 is used twice
+               "sheets": {**_SHEETS, "spring": [("spring-a", 0), ("spring-a", 1), ("spring-a", 3)]
+                          + _SHEETS["spring"][3:]},
                "visor_skip": _SKIP},
 }
 
