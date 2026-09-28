@@ -69,6 +69,8 @@ _SHEETS = {
                ("spring-b", 0), ("spring-b", 1), ("spring-b", 2), ("spring-b", 3)],
 }
 _SKIP = {("poses", 2), ("jump", 2), ("spring-b", 1), ("spring-b", 2)}
+# wings / capes wrapped around the tuck ball make it come out ~20 % too big
+_TUCK = {("spring-b", 1): 0.8, ("spring-b", 2): 0.8}
 
 SKINS = {
     "wings": {"visor": "sky", "sources": _GRID, "poses": _POSES, "sheets": _SHEETS,
@@ -76,24 +78,24 @@ SKINS = {
     "golden": {"visor": "grey", "sources": _GRID, "poses": _POSES, "sheets": _SHEETS,
                "visor_skip": _SKIP},
     "sunfire": {"visor": "navy", "sources": _GRID, "poses": _POSES, "sheets": _SHEETS,
-                "visor_skip": _SKIP},
+                "visor_skip": _SKIP, "scale_mul": _TUCK},
     "galaxy": {"visor": "sky", "sources": _GRID, "poses": _POSES,
                # spring-a frame 2 strayed from the flight pose; frames 2 and 3 are the
                # same classic pose, so frame 3 is used twice
                "sheets": {**_SHEETS, "spring": [("spring-a", 0), ("spring-a", 1), ("spring-a", 3)]
                           + _SHEETS["spring"][3:]},
-               "visor_skip": _SKIP},
+               "visor_skip": _SKIP, "scale_mul": _TUCK},
 }
 
 
-def visor_width(rgba, kind, tops=(0.7,)):
+def visor_width(rgba, kind, tops=(0.7,), min_ratio=1.15):
     """Visor width, or None when the blob isn't visor-shaped (wider than tall)."""
     for t in tops:
         try:
             x0, y0, x1, y1 = visor_box(rgba, kind, top_only=t)
         except SystemExit:
             continue
-        if 1.15 < (x1 - x0) / max(1, y1 - y0) < 1.8:
+        if min_ratio < (x1 - x0) / max(1, y1 - y0) < 1.8:
             return x1 - x0
     return None
 
@@ -204,13 +206,17 @@ def build_skin(skin_id, cfg):
     # both sides measure cleanly, so relative sizes stay exactly as drawn
     sheet_scale = {}
     for sheet in cfg["sources"]:
+        # skin visors (helmet tint can make them squarer than the classic ones)
+        widths = {k: visor_width(frames[k], cfg["visor"], min_ratio=1.0)
+                  for k in sorted(k for k in used if k[0] == sheet)
+                  if k not in cfg.get("visor_skip", ())}
+        widths = {k: w for k, w in widths.items() if w}
+        # one sheet is drawn at one scale: drop measurements far off the median
+        mid = float(np.median(list(widths.values()))) if widths else 0
         ratios = []
-        for key in sorted(k for k in used if k[0] == sheet):
-            if key in cfg.get("visor_skip", ()):
-                continue
+        for key, sw in widths.items():
             cw = classic.get(cfg.get("slots", {}).get(key, key))
-            sw = visor_width(frames[key], cfg["visor"])
-            if cw and sw:
+            if cw and abs(sw - mid) <= 0.25 * mid:
                 ratios.append(cw / sw)
         if not ratios:
             raise SystemExit(f"{skin_id}: no measurable visor on {sheet}")
