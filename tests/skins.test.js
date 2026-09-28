@@ -13,11 +13,13 @@ const setup = (balance = 0, saved) => {
 };
 
 describe('skin catalog', () => {
-  it('has the free classic skin plus the two DLI skins', () => {
-    expect(SKINS.map((s) => s.id)).toEqual(['classic', 'wings', 'golden']);
+  it('has the free classic skin plus the four DLI skins', () => {
+    expect(SKINS.map((s) => s.id)).toEqual(['classic', 'wings', 'golden', 'sunfire', 'galaxy']);
     expect(getSkin('classic').price).toBe(0);
     expect(getSkin('wings').price).toBe(100);
     expect(getSkin('golden').price).toBe(200);
+    expect(getSkin('sunfire').price).toBe(250);
+    expect(getSkin('galaxy').price).toBe(300);
     expect(DEFAULT_SKIN).toBe('classic');
   });
 

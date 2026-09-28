@@ -54,6 +54,20 @@ export const SKINS = Object.freeze([
     price: 200,
     art: SKIN_ART.golden,
   },
+  {
+    id: 'sunfire',
+    name: 'Sunfire Angel',
+    tagline: 'Four glowing wings, a blazing cape and a fiery plume.',
+    price: 250,
+    art: SKIN_ART.sunfire,
+  },
+  {
+    id: 'galaxy',
+    name: 'Galaxy Nebula',
+    tagline: 'A spiral galaxy suit, silver armor and flowing nebula ribbons.',
+    price: 300,
+    art: SKIN_ART.galaxy,
+  },
 ]);
 
 const BY_ID = new Map(SKINS.map((s) => [s.id, s]));

@@ -28,9 +28,11 @@ Coins that are already flying keep coming after the magnet runs out.
 | Classic       | Free    |
 | Neon Wings    | 100 DLI |
 | Golden Seraph | 200 DLI |
+| Sunfire Angel | 250 DLI |
+| Galaxy Nebula | 300 DLI |
 
 Skins are cosmetic: the hitbox, physics and animations timings are the same
-for every skin. Purchases are paid from the DLI wallet and, like the wallet,
+for every skin, and every skin does exactly the classic mascot's poses. Purchases are paid from the DLI wallet and, like the wallet,
 are stored on the device (localStorage key `skins`).
 
 ## Player level
@@ -53,6 +55,10 @@ Your level is shown next to your name on the leaderboard for everyone to see.
 | `JUMP_VELOCITY`    | −1010 px/s | Apex ≈ 237 px                                            |
 | `SPRING_VELOCITY`  | −1650 px/s | Apex ≈ 633 px                                            |
 | `PLATFORM.MAX_GAP` | 200 px     | Always below the jump apex, so every level can be beaten |
+
+Only what you can see counts: platforms, springs and monsters whose top is
+below the bottom edge of the screen (minus `CAMERA.LANDING_MARGIN`, 6 px) can't
+be landed on or hit, so once you fall off the screen you keep falling.
 
 ## Platforms
 

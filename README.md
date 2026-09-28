@@ -23,24 +23,24 @@ Jump from platform to platform, grab **DLI coins**, dodge glitch bugs and climb 
 
 ## ✨ Features
 
-| Feature                | Description                                                                                                                                       |
-| ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 🎮 **Single player**   | Endless vertical climb with procedurally generated, always-beatable levels                                                                        |
-| 🦸 **Animated mascot** | Generated **3-pose jump** (squat · rise · fall) and **8-frame spring super-jump** (superhero flight, somersault), plus shoot / hurt / cheer poses |
-| 🏷️ **Custom name bar** | Pick your player name; shown in the in-game HUD and on the leaderboard                                                                            |
-| 🔢 **Scoreboard**      | Live score + personal best in the HUD, and a detailed end-of-run scoreboard                                                                       |
-| ⭐ **Player level**    | Every point you score is XP — all runs add up. Level shown next to your name on the leaderboard, XP bar in the menu, LEVEL UP! on game over       |
-| 🏆 **Leaderboard**     | Live global leaderboard (Supabase, realtime) — each player's best score, medals, dates and coins; offline fallback                                |
-| 🪙 **DLI coin bar**    | Collect coins stamped with the Dlicom logo; run total in the HUD and a persistent DLI wallet                                                      |
-| 🧲 **Coin magnet**     | Grab the magnet power-up and every coin nearby flies to you for 8 seconds (countdown in the HUD)                                                  |
-| 👕 **Dressing Room**   | Spend your DLI on character skins: **Neon Wings** (100 DLI) and **Golden Seraph** (200 DLI), each with its own full set of animations             |
-| 🧱 **Side walls**      | Solid glowing walls on both sides: the mascot can't slip off one edge and appear on the other                                                     |
-| 🧩 **Platforms**       | Normal, moving, breaking and vanishing platforms plus bouncy "boing" springs                                                                      |
-| 👾 **Enemies**         | Glitch bugs — stomp them or shoot them with energy bolts                                                                                          |
-| 📱 **Easy controls**   | On-screen ◀ ▶ buttons (touch or mouse, slide between them), keyboard, installable PWA                                                             |
-| 🎵 **Music & sound**   | Original chiptune soundtrack that gets fuller as you climb + sound effects, all synthesised live (no audio files)                                 |
-| 📶 **Works offline**   | Installable PWA with a service worker: loads instantly after the first visit and plays with no connection                                         |
-| 🔐 **No login**        | Your name, coins and player id live in the browser; scores are stored in Supabase                                                                 |
+| Feature                | Description                                                                                                                                                                                 |
+| ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 🎮 **Single player**   | Endless vertical climb with procedurally generated, always-beatable levels                                                                                                                  |
+| 🦸 **Animated mascot** | Generated **3-pose jump** (squat · rise · fall) and **8-frame spring super-jump** (superhero flight, somersault), plus shoot / hurt / cheer poses                                           |
+| 🏷️ **Custom name bar** | Pick your player name; shown in the in-game HUD and on the leaderboard                                                                                                                      |
+| 🔢 **Scoreboard**      | Live score + personal best in the HUD, and a detailed end-of-run scoreboard                                                                                                                 |
+| ⭐ **Player level**    | Every point you score is XP — all runs add up. Level shown next to your name on the leaderboard, XP bar in the menu, LEVEL UP! on game over                                                 |
+| 🏆 **Leaderboard**     | Live global leaderboard (Supabase, realtime) — each player's best score, medals, dates and coins; offline fallback                                                                          |
+| 🪙 **DLI coin bar**    | Collect coins stamped with the Dlicom logo; run total in the HUD and a persistent DLI wallet                                                                                                |
+| 🧲 **Coin magnet**     | Grab the magnet power-up and every coin nearby flies to you for 8 seconds (countdown in the HUD)                                                                                            |
+| 👕 **Dressing Room**   | Spend your DLI on character skins: **Neon Wings** (100), **Golden Seraph** (200), **Sunfire Angel** (250) and **Galaxy Nebula** (300 DLI), each doing every classic move in its own costume |
+| 🧱 **Side walls**      | Solid glowing walls on both sides: the mascot can't slip off one edge and appear on the other                                                                                               |
+| 🧩 **Platforms**       | Normal, moving, breaking and vanishing platforms plus bouncy "boing" springs                                                                                                                |
+| 👾 **Enemies**         | Glitch bugs — stomp them or shoot them with energy bolts                                                                                                                                    |
+| 📱 **Easy controls**   | On-screen ◀ ▶ buttons (touch or mouse, slide between them), keyboard, installable PWA                                                                                                       |
+| 🎵 **Music & sound**   | Original chiptune soundtrack that gets fuller as you climb + sound effects, all synthesised live (no audio files)                                                                           |
+| 📶 **Works offline**   | Installable PWA with a service worker: loads instantly after the first visit and plays with no connection                                                                                   |
+| 🔐 **No login**        | Your name, coins and player id live in the browser; scores are stored in Supabase                                                                                                           |
 
 ## 🕹️ Controls
 
@@ -139,7 +139,7 @@ See [`docs/BRANCHING.md`](docs/BRANCHING.md) for the full workflow.
 ## 🎨 Assets
 
 - **Mascot** — based on the official Dlicom mascot artwork. Poses were AI-generated from the reference and processed with [`tools/process_sprites.py`](tools/process_sprites.py) (chroma-key, despill, uniform scale, bottom-centre anchor).
-- **Skins** — Neon Wings and Golden Seraph were AI-generated from the uploaded character art (pose sheet, 3-pose jump, 8-frame spring each) and processed with [`tools/process_skins.py`](tools/process_skins.py), which scales every frame by its visor so all skins share the classic mascot's body size.
+- **Skins** — Neon Wings, Golden Seraph, Sunfire Angel and Galaxy Nebula were AI-generated as redraws of reference sheets made from the classic mascot's own frames, dressed in the uploaded costume art (pose sheet, 3-pose jump, 8-frame spring each), so they copy every classic pose. [`tools/process_skins.py`](tools/process_skins.py) sizes each sheet by its visors so all skins share the classic mascot's body size.
 - **Logo** — the official Dlicom logo (`public/assets/brand/dlicom-logo.svg`). It is also drawn as vector paths on every DLI coin (`src/rendering/brand.js`).
 
 <p align="center"><img src="docs/images/poses.png" alt="Mascot poses" /></p>

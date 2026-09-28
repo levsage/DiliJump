@@ -24,7 +24,9 @@ Output per skin (``public/assets/sprites/skins/<id>/``, content-hashed):
   * ``avatar.<hash>.webp``  round-HUD head crop
 plus an ``avatar`` for the classic skin, and ``src/config/skins.json``.
 
-Usage: python3 tools/process_skins.py   (npm run sprites:skins)
+Usage: python3 tools/process_skins.py            all skins (npm run sprites:skins)
+       python3 tools/process_skins.py <id> ...   only these skins
+       python3 tools/process_skins.py --refs     classic reference sheets
 """
 
 import hashlib
@@ -314,9 +316,27 @@ def build_references():
         print(f"reference {sheet}.png")
 
 
+def build_some(ids):
+    """Re-build only the given skins; every other skin keeps its current files."""
+    manifest = json.load(open(MANIFEST))
+    for skin_id in ids:
+        if skin_id not in SKINS:
+            raise SystemExit(f"unknown skin {skin_id!r} (known: {', '.join(SKINS)})")
+        shutil.rmtree(os.path.join(OUT, skin_id), ignore_errors=True)
+        print(skin_id)
+        manifest[skin_id] = build_skin(skin_id, SKINS[skin_id])
+    with open(MANIFEST, "w") as fh:
+        json.dump(manifest, fh, indent=2)
+        fh.write("\n")
+    print(f"updated {os.path.relpath(MANIFEST, ROOT)}")
+
+
 def main():
     if "--refs" in sys.argv:
         return build_references()
+    ids = [a for a in sys.argv[1:] if not a.startswith("-")]
+    if ids:
+        return build_some(ids)
     shutil.rmtree(OUT, ignore_errors=True)
     os.makedirs(OUT)
     manifest = {}

@@ -15,16 +15,22 @@ and the project uses [Semantic Versioning](https://semver.org/).
   - **Classic**: free, the original caped hero.
   - **Neon Wings** (100 DLI): the mascot with glowing lime-green feathered wings.
   - **Golden Seraph** (200 DLI): gold armor, galaxy wings and a dragon tail.
+  - **Sunfire Angel** (250 DLI): four glowing wings, a blazing red-orange cape and a fiery plume.
+  - **Galaxy Nebula** (300 DLI): a spiral-galaxy suit, silver armor and flowing nebula ribbons.
   - Buying takes two taps (price, then **Confirm**) so no coins are spent by accident. The confirmation expires after 4 s. A skin you can't afford yet shows how many DLI you still need. A bought skin is worn right away, and you can switch back any time.
   - Skins are purely cosmetic: the same hitbox and jump for everyone.
   - The skin you wear is used everywhere: in game, in the menu demo, as the HUD avatar and on the game-over screen. Purchases and the worn skin are saved on this device, like the wallet.
-- **Full animation set per skin.** Every skin has its own idle, shoot, hurt and cheer poses, the 3-pose jump and the 8-frame spring super-jump, generated from the uploaded character art with the background removed. The new `tools/process_skins.py` (`npm run sprites:skins`) builds them and scales every frame by its visor, so all skins share the classic mascot's body size.
+- **Full animation set per skin, move for move like the classic mascot.** Every skin has its own idle, shoot, hurt and cheer poses, the 3-pose jump and the 8-frame spring super-jump. Each sheet was generated as a redraw of a reference sheet built from the classic mascot's own frames (`art/skins/_classic/`), so every skin does exactly the same poses with the same body proportions: only the costume changes. The new `tools/process_skins.py` (`npm run sprites:skins`) builds them and sizes each sheet by comparing its visors with the classic ones, so all skins share the classic mascot's body size.
 - Round HUD avatars are now proper head crops (for the classic mascot too).
 
 ### Changed
 
 - Only the equipped skin is downloaded at start-up. The Dressing Room previews load in the background, and another skin loads when you first wear it. If a bought skin can't be loaded (offline, not cached), the game starts with the classic mascot instead of failing.
 - `WalletService.spend()` pays for purchases. Coins stay client-side and are never validated by the server.
+
+### Fixed
+
+- The mascot could bounce off a platform just below the bottom of the screen that you could no longer see. Platforms, springs and monsters now only count once they are on screen.
 
 ## [3.0.1] - 2026-09-26
 
