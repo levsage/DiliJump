@@ -40,6 +40,13 @@ export class WalletService {
     return true;
   }
 
+  /** Gives coins back to the persistent balance (e.g. for a retired skin). */
+  refund(amount) {
+    if (!Number.isInteger(amount) || amount <= 0) return;
+    this.balance += amount;
+    this.save();
+  }
+
   save() {
     this.storage.set('wallet', { balance: this.balance, lifetime: this.lifetime });
   }

@@ -50,7 +50,7 @@ npm run sprites:skins
 # = python3 tools/process_skins.py  → public/assets/sprites/skins/<id>/*.<hash>.webp + src/config/skins.json
 ```
 
-Each skin (`wings`, `golden`, `sunfire`, `galaxy`) has four sheets, stored as
+Each skin (`wings`, `golden`, `galaxy`) has four sheets, stored as
 lossless WebP (a third smaller than PNG, identical pixels). Every
 sheet is a redraw of the matching **classic reference sheet** in
 `skins/_classic/` (`python3 tools/process_skins.py --refs` rebuilds those from

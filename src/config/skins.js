@@ -55,13 +55,6 @@ export const SKINS = Object.freeze([
     art: SKIN_ART.golden,
   },
   {
-    id: 'sunfire',
-    name: 'Sunfire Angel',
-    tagline: 'Four glowing wings, a blazing cape and a fiery plume.',
-    price: 250,
-    art: SKIN_ART.sunfire,
-  },
-  {
     id: 'galaxy',
     name: 'Galaxy Nebula',
     tagline: 'A spiral galaxy suit, silver armor and flowing nebula ribbons.',
@@ -69,6 +62,12 @@ export const SKINS = Object.freeze([
     art: SKIN_ART.galaxy,
   },
 ]);
+
+/**
+ * Skins that were sold once and then removed, with the price paid. Anyone who
+ * owned one gets the DLI back (once) the next time the game starts.
+ */
+export const RETIRED_SKINS = Object.freeze({ sunfire: 250 });
 
 const BY_ID = new Map(SKINS.map((s) => [s.id, s]));
 

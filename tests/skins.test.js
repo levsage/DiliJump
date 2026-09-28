@@ -13,12 +13,12 @@ const setup = (balance = 0, saved) => {
 };
 
 describe('skin catalog', () => {
-  it('has the free classic skin plus the four DLI skins', () => {
-    expect(SKINS.map((s) => s.id)).toEqual(['classic', 'wings', 'golden', 'sunfire', 'galaxy']);
+  it('has the free classic skin plus the three DLI skins', () => {
+    expect(SKINS.map((s) => s.id)).toEqual(['classic', 'wings', 'golden', 'galaxy']);
     expect(getSkin('classic').price).toBe(0);
     expect(getSkin('wings').price).toBe(100);
     expect(getSkin('golden').price).toBe(200);
-    expect(getSkin('sunfire').price).toBe(250);
+    expect(getSkin('sunfire')).toBeUndefined(); // removed from the shop
     expect(getSkin('galaxy').price).toBe(300);
     expect(DEFAULT_SKIN).toBe('classic');
   });
@@ -100,5 +100,29 @@ describe('SkinService', () => {
     expect(skins.equipped).toBe('classic'); // golden is not owned
     const broken = setup(0, 'garbage').skins;
     expect(broken.equipped).toBe('classic');
+  });
+});
+
+describe('retired skins', () => {
+  it('refunds a removed skin once and puts the classic suit back on', () => {
+    const { storage, wallet, skins } = setup(40, {
+      owned: ['classic', 'sunfire', 'wings'],
+      equipped: 'sunfire',
+    });
+    expect(wallet.balance).toBe(40 + 250);
+    expect(storage.get('wallet').balance).toBe(290);
+    expect(skins.owns('sunfire')).toBe(false);
+    expect(skins.owns('wings')).toBe(true);
+    expect(skins.equipped).toBe('classic');
+    expect(storage.get('skins').owned).not.toContain('sunfire');
+    // next start: no second refund
+    const again = new SkinService(storage, new WalletService(storage));
+    expect(again.wallet.balance).toBe(290);
+  });
+
+  it('leaves players who never bought it alone', () => {
+    const { wallet, skins } = setup(40, { owned: ['classic', 'galaxy'], equipped: 'galaxy' });
+    expect(wallet.balance).toBe(40);
+    expect(skins.equipped).toBe('galaxy');
   });
 });

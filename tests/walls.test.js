@@ -70,42 +70,79 @@ describe('side walls', () => {
   });
 });
 
-describe('off-screen platforms', () => {
-  it('a platform below the bottom of the screen never catches a falling player', async () => {
+describe('hidden platforms', () => {
+  const still = { axis: 0, consumeShoot: () => false };
+
+  const fallOnto = async (platformY, inset) => {
     const { World } = await import('../src/core/World.js');
     const { EventBus } = await import('../src/core/EventBus.js');
-    const { CAMERA } = await import('../src/config/constants.js');
     const world = new World(new EventBus());
-    const still = { axis: 0, consumeShoot: () => false };
+    if (inset !== undefined) world.setBottomInset(inset);
     world.springs = [];
     world.monsters = [];
     world.coins = [];
     world.powerUps = [];
-    const bottom = world.camera.bottom;
-    const hidden = new Platform(world.player.x - 30, bottom + 40, PLATFORM_TYPES.NORMAL);
-    const visible = new Platform(world.player.x - 30, bottom - 60, PLATFORM_TYPES.NORMAL);
-
-    // only the hidden platform under the player: they fall straight through it
-    world.platforms = [hidden];
-    world.player.y = bottom + 10;
+    const p = new Platform(
+      world.player.x - 30,
+      world.camera.bottom + platformY,
+      PLATFORM_TYPES.NORMAL,
+    );
+    world.platforms = [p];
+    world.player.y = p.y - 30;
     world.player.vy = 400;
-    for (let i = 0; i < 20; i++) world.update(dt, still);
-    expect(world.player.y).toBeGreaterThan(hidden.y);
-    expect(world.player.vy).toBeGreaterThan(0);
-
-    // a platform that is on screen still works normally
-    const w2 = new World(new EventBus());
-    w2.springs = [];
-    w2.monsters = [];
-    w2.platforms = [visible];
-    w2.player.y = visible.y - 30;
-    w2.player.vy = 400;
     let bounced = false;
     for (let i = 0; i < 20 && !bounced; i++) {
-      w2.update(dt, still);
-      bounced = w2.player.vy < 0;
+      world.update(dt, still);
+      bounced = world.player.vy < 0;
     }
+    return { world, bounced };
+  };
+
+  it('a platform below the bottom of the screen never catches a falling player', async () => {
+    expect((await fallOnto(+40)).bounced).toBe(false);
+  });
+
+  it('a platform hidden behind the on-screen controls does not catch you either', async () => {
+    const { CAMERA } = await import('../src/config/constants.js');
+    // 60 units above the bottom edge = behind the ~120-unit control bar
+    expect((await fallOnto(-60)).bounced).toBe(false);
+    expect((await fallOnto(-(CAMERA.BOTTOM_INSET + 2))).bounced).toBe(false); // top too close
+  });
+
+  it('a platform above the controls works normally', async () => {
+    const { CAMERA } = await import('../src/config/constants.js');
+    const { bounced } = await fallOnto(-(CAMERA.BOTTOM_INSET + CAMERA.LANDING_MARGIN + 30));
     expect(bounced).toBe(true);
-    expect(CAMERA.LANDING_MARGIN).toBeGreaterThan(0);
+  });
+
+  it('follows the inset the UI measures, within limits', async () => {
+    const { CAMERA } = await import('../src/config/constants.js');
+    // no controls: everything down to the screen edge counts
+    expect((await fallOnto(-60, 0)).bounced).toBe(true);
+    const { world } = await fallOnto(-300, 150);
+    expect(world.landingFloor).toBe(world.camera.bottom - 150 - CAMERA.LANDING_MARGIN);
+    world.setBottomInset(9999);
+    expect(world.bottomInset).toBe(CAMERA.MAX_BOTTOM_INSET);
+    world.setBottomInset(NaN);
+    expect(world.bottomInset).toBe(CAMERA.MAX_BOTTOM_INSET);
+  });
+
+  it('a new run starts on a platform above the controls', async () => {
+    const { World } = await import('../src/core/World.js');
+    const { EventBus } = await import('../src/core/EventBus.js');
+    for (const inset of [0, 120, 180]) {
+      const world = new World(new EventBus());
+      world.setBottomInset(inset);
+      world.reset();
+      expect(world.player.y).toBeLessThan(world.landingFloor);
+      // and the player can actually bounce off it
+      let bounced = false;
+      for (let i = 0; i < 60 && !bounced; i++) {
+        world.update(dt, still);
+        bounced = world.player.vy < 0;
+      }
+      expect(bounced).toBe(true);
+      expect(world.over).toBe(false);
+    }
   });
 });

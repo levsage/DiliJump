@@ -6,6 +6,16 @@ and the project uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [3.1.1] - 2026-09-28
+
+### Removed
+
+- **Sunfire Angel** is no longer in the Dressing Room. Anyone who bought it gets the **250 DLI back** automatically (once) the next time the game opens, and goes back to the classic suit if they were wearing it.
+
+### Fixed
+
+- The mascot could still land on platforms that had slid behind the on-screen ◀ / ⚡ / ▶ controls at the bottom of the screen, where you can't see them, and bounce back up from nowhere. The playfield now ends at the top of the controls: the game measures the real controls height (including the iPhone home bar), platforms, springs and monsters below that line no longer count and are drawn faded, and every run starts on a platform above the controls.
+
 ## [3.1.0] - 2026-09-28
 
 ### Added
@@ -166,7 +176,8 @@ The first production release: everything from the unreleased 1.3 line (new anima
 - Keyboard and touch controls, responsive layout, PWA manifest.
 - Tooling: Vite, ESLint, Prettier, Vitest, GitHub Actions CI and GitHub Pages deploy.
 
-[Unreleased]: https://github.com/levsage/DiliJump/compare/v3.1.0...HEAD
+[Unreleased]: https://github.com/levsage/DiliJump/compare/v3.1.1...HEAD
+[3.1.1]: https://github.com/levsage/DiliJump/compare/v3.1.0...v3.1.1
 [3.1.0]: https://github.com/levsage/DiliJump/compare/v3.0.1...v3.1.0
 [3.0.1]: https://github.com/levsage/DiliJump/compare/v3.0.0...v3.0.1
 [3.0.0]: https://github.com/levsage/DiliJump/compare/v2.0.0...v3.0.0

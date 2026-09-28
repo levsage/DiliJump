@@ -170,10 +170,15 @@ export const CAMERA = Object.freeze({
   /** Player is kept at or below this fraction of the screen height. */
   FOLLOW_LINE: 0.42,
   /**
-   * Only platforms / springs / monsters at least this far above the bottom
-   * edge of the screen can be landed on — never ones you can't see.
+   * Only platforms / springs / monsters you can actually see count: their top
+   * must be at least LANDING_MARGIN above the visible bottom of the playfield,
+   * which is the top of the on-screen controls (`BOTTOM_INSET`, measured from
+   * the real layout by the UI; this default matches the standard layout).
    */
-  LANDING_MARGIN: 6,
+  LANDING_MARGIN: 10,
+  BOTTOM_INSET: 120,
+  /** Largest inset the UI may report (guards against odd layouts). */
+  MAX_BOTTOM_INSET: 220,
 });
 
 export const SCORING = Object.freeze({

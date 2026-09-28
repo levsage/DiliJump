@@ -28,7 +28,6 @@ Coins that are already flying keep coming after the magnet runs out.
 | Classic       | Free    |
 | Neon Wings    | 100 DLI |
 | Golden Seraph | 200 DLI |
-| Sunfire Angel | 250 DLI |
 | Galaxy Nebula | 300 DLI |
 
 Skins are cosmetic: the hitbox, physics and animations timings are the same
@@ -56,9 +55,14 @@ Your level is shown next to your name on the leaderboard for everyone to see.
 | `SPRING_VELOCITY`  | −1650 px/s | Apex ≈ 633 px                                            |
 | `PLATFORM.MAX_GAP` | 200 px     | Always below the jump apex, so every level can be beaten |
 
-Only what you can see counts: platforms, springs and monsters whose top is
-below the bottom edge of the screen (minus `CAMERA.LANDING_MARGIN`, 6 px) can't
-be landed on or hit, so once you fall off the screen you keep falling.
+Only what you can see counts. The on-screen controls cover the bottom of the
+view, so the visible playfield ends at the top of the ◀ / ▶ buttons. The UI
+measures that height from the real layout (`CAMERA.BOTTOM_INSET`, about 120
+units by default, more with an iPhone home bar) and passes it to the world.
+Platforms, springs and monsters whose top is below that line (minus
+`CAMERA.LANDING_MARGIN`, 10 units) can't be landed on, stomped or hit, and are
+drawn faded so you can tell. Once you fall behind the controls you keep
+falling. Each run starts on a platform just above the controls.
 
 ## Platforms
 
