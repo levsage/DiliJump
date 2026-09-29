@@ -6,7 +6,9 @@ and the project uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
-## [3.1.2] - 2026-09-29
+## [4.0.0] - 2026-09-29
+
+DiliJump 4: the fair-landing release. What you see on screen is exactly what you can jump on, and the Dressing Room keeps the four skins (Classic, Neon Wings, Golden Seraph, Galaxy Nebula).
 
 ### Fixed
 
@@ -187,8 +189,8 @@ The first production release: everything from the unreleased 1.3 line (new anima
 - Keyboard and touch controls, responsive layout, PWA manifest.
 - Tooling: Vite, ESLint, Prettier, Vitest, GitHub Actions CI and GitHub Pages deploy.
 
-[Unreleased]: https://github.com/levsage/DiliJump/compare/v3.1.2...HEAD
-[3.1.2]: https://github.com/levsage/DiliJump/compare/v3.1.1...v3.1.2
+[Unreleased]: https://github.com/levsage/DiliJump/compare/v4.0.0...HEAD
+[4.0.0]: https://github.com/levsage/DiliJump/compare/v3.1.1...v4.0.0
 [3.1.1]: https://github.com/levsage/DiliJump/compare/v3.1.0...v3.1.1
 [3.1.0]: https://github.com/levsage/DiliJump/compare/v3.0.1...v3.1.0
 [3.0.1]: https://github.com/levsage/DiliJump/compare/v3.0.0...v3.0.1
