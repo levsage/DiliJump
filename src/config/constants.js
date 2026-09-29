@@ -170,15 +170,14 @@ export const CAMERA = Object.freeze({
   /** Player is kept at or below this fraction of the screen height. */
   FOLLOW_LINE: 0.42,
   /**
-   * Only platforms / springs / monsters you can actually see count: their top
-   * must be at least LANDING_MARGIN above the visible bottom of the playfield,
-   * which is the top of the on-screen controls (`BOTTOM_INSET`, measured from
-   * the real layout by the UI; this default matches the standard layout).
+   * Everything you can see on screen counts, right down to the bottom edge.
+   * A platform / spring / monster only stops counting once it has (almost)
+   * scrolled off: its top must be at least LANDING_MARGIN above the bottom of
+   * the view, i.e. a third of an 18-unit platform still showing.
    */
-  LANDING_MARGIN: 10,
-  BOTTOM_INSET: 120,
-  /** Largest inset the UI may report (guards against odd layouts). */
-  MAX_BOTTOM_INSET: 220,
+  LANDING_MARGIN: 6,
+  /** The first platform of a run sits this far above the bottom of the view (clear of the controls). */
+  START_HEIGHT: 170,
 });
 
 export const SCORING = Object.freeze({

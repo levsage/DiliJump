@@ -70,21 +70,21 @@ describe('side walls', () => {
   });
 });
 
-describe('hidden platforms', () => {
+describe('platforms at the bottom of the screen', () => {
   const still = { axis: 0, consumeShoot: () => false };
 
-  const fallOnto = async (platformY, inset) => {
+  /** Drop the player onto a platform whose top is `fromBottom` units above the screen's bottom edge. */
+  const fallOnto = async (fromBottom) => {
     const { World } = await import('../src/core/World.js');
     const { EventBus } = await import('../src/core/EventBus.js');
     const world = new World(new EventBus());
-    if (inset !== undefined) world.setBottomInset(inset);
     world.springs = [];
     world.monsters = [];
     world.coins = [];
     world.powerUps = [];
     const p = new Platform(
       world.player.x - 30,
-      world.camera.bottom + platformY,
+      world.camera.bottom - fromBottom,
       PLATFORM_TYPES.NORMAL,
     );
     world.platforms = [p];
@@ -99,50 +99,41 @@ describe('hidden platforms', () => {
   };
 
   it('a platform below the bottom of the screen never catches a falling player', async () => {
-    expect((await fallOnto(+40)).bounced).toBe(false);
+    expect((await fallOnto(-40)).bounced).toBe(false);
+    expect((await fallOnto(0)).bounced).toBe(false); // exactly on the edge: not visible
   });
 
-  it('a platform hidden behind the on-screen controls does not catch you either', async () => {
+  it('a platform that has almost scrolled off (only a sliver showing) does not count', async () => {
     const { CAMERA } = await import('../src/config/constants.js');
-    // 60 units above the bottom edge = behind the ~120-unit control bar
-    expect((await fallOnto(-60)).bounced).toBe(false);
-    expect((await fallOnto(-(CAMERA.BOTTOM_INSET + 2))).bounced).toBe(false); // top too close
+    expect((await fallOnto(CAMERA.LANDING_MARGIN - 2)).bounced).toBe(false);
   });
 
-  it('a platform above the controls works normally', async () => {
+  it('a visible platform near the bottom still catches you, even behind the controls', async () => {
     const { CAMERA } = await import('../src/config/constants.js');
-    const { bounced } = await fallOnto(-(CAMERA.BOTTOM_INSET + CAMERA.LANDING_MARGIN + 30));
-    expect(bounced).toBe(true);
+    // e.g. the cut-off platform under the shoot button in the bug report
+    expect((await fallOnto(CAMERA.LANDING_MARGIN + 4)).bounced).toBe(true);
+    expect((await fallOnto(60)).bounced).toBe(true); // behind the control bar
+    expect((await fallOnto(200)).bounced).toBe(true);
   });
 
-  it('follows the inset the UI measures, within limits', async () => {
+  it('the landing floor is the bottom edge of the screen minus the margin', async () => {
     const { CAMERA } = await import('../src/config/constants.js');
-    // no controls: everything down to the screen edge counts
-    expect((await fallOnto(-60, 0)).bounced).toBe(true);
-    const { world } = await fallOnto(-300, 150);
-    expect(world.landingFloor).toBe(world.camera.bottom - 150 - CAMERA.LANDING_MARGIN);
-    world.setBottomInset(9999);
-    expect(world.bottomInset).toBe(CAMERA.MAX_BOTTOM_INSET);
-    world.setBottomInset(NaN);
-    expect(world.bottomInset).toBe(CAMERA.MAX_BOTTOM_INSET);
+    const { world } = await fallOnto(100);
+    expect(world.landingFloor).toBe(world.camera.bottom - CAMERA.LANDING_MARGIN);
   });
 
-  it('a new run starts on a platform above the controls', async () => {
+  it('a new run starts on a platform clear of the controls', async () => {
     const { World } = await import('../src/core/World.js');
     const { EventBus } = await import('../src/core/EventBus.js');
-    for (const inset of [0, 120, 180]) {
-      const world = new World(new EventBus());
-      world.setBottomInset(inset);
-      world.reset();
-      expect(world.player.y).toBeLessThan(world.landingFloor);
-      // and the player can actually bounce off it
-      let bounced = false;
-      for (let i = 0; i < 60 && !bounced; i++) {
-        world.update(dt, still);
-        bounced = world.player.vy < 0;
-      }
-      expect(bounced).toBe(true);
-      expect(world.over).toBe(false);
+    const { CAMERA } = await import('../src/config/constants.js');
+    const world = new World(new EventBus());
+    expect(world.player.y).toBe(VIEW.HEIGHT - CAMERA.START_HEIGHT);
+    let bounced = false;
+    for (let i = 0; i < 60 && !bounced; i++) {
+      world.update(dt, still);
+      bounced = world.player.vy < 0;
     }
+    expect(bounced).toBe(true);
+    expect(world.over).toBe(false);
   });
 });
