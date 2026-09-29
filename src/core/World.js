@@ -28,8 +28,6 @@ export class World {
     this.events = events;
     this.camera = new Camera();
     this.particles = new ParticleSystem();
-    /** Height (world units) hidden by the on-screen controls at the bottom. */
-    this.bottomInset = CAMERA.BOTTOM_INSET;
     this.reset();
   }
 
@@ -56,8 +54,8 @@ export class World {
     this.magnetShown = -1;
 
     this.generator = new LevelGenerator(this, { seed });
-    // start just above the on-screen controls, where the first platform is visible
-    const startY = VIEW.HEIGHT - this.bottomInset - 50;
+    // start clear of the on-screen controls
+    const startY = VIEW.HEIGHT - CAMERA.START_HEIGHT;
     this.originY = startY;
     const floor = this.generator.init(startY);
     this.player = new Player(floor.x + floor.w / 2, floor.y);
@@ -172,20 +170,11 @@ export class World {
   }
 
   /**
-   * The UI reports how much of the bottom of the view the on-screen controls
-   * cover (world units), so nothing hidden behind them counts.
-   */
-  setBottomInset(units) {
-    if (!Number.isFinite(units)) return;
-    this.bottomInset = Math.min(CAMERA.MAX_BOTTOM_INSET, Math.max(0, units));
-  }
-
-  /**
-   * World y below which nothing can be landed on, stomped or hit: the visible
-   * bottom of the playfield (top of the controls) minus a small margin.
+   * World y below which nothing can be landed on, stomped or hit: the bottom
+   * edge of the screen minus a small margin, so only what you can see counts.
    */
   get landingFloor() {
-    return this.camera.bottom - this.bottomInset - CAMERA.LANDING_MARGIN;
+    return this.camera.bottom - CAMERA.LANDING_MARGIN;
   }
 
   handleLanding() {
@@ -207,7 +196,7 @@ export class World {
     }
 
     for (const p of this.platforms) {
-      if (!p.solid || p.y > floor) continue; // hidden platforms don't catch you
+      if (!p.solid || p.y > floor) continue; // off-screen platforms don't catch you
       if (!landsOn(feet, player.prevY, player.y, player.vy, p)) continue;
 
       if (p.type === 'breaking') {
@@ -309,7 +298,7 @@ export class World {
     for (const m of this.monsters) {
       if (!m.alive) continue;
       const mb = m.hitbox;
-      if (mb.y > this.landingFloor) continue; // hidden: can't be stomped or hit
+      if (mb.y > this.landingFloor) continue; // off-screen: can't be stomped or hit
       if (!aabbOverlap(box, mb)) continue;
       // Stomp: falling and feet near the monster's top (only if you can see it).
       if (player.isFalling && player.prevY <= mb.y + 16) {

@@ -6,6 +6,17 @@ and the project uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [3.1.2] - 2026-09-29
+
+### Fixed
+
+- The 3.1.1 fix went too far: the mascot fell straight through platforms at the bottom of the screen that you could clearly see (between or behind the ◀ / ⚡ / ▶ buttons). Now everything visible on screen counts again, right down to the bottom edge. Only platforms, springs and monsters that have scrolled off the bottom (less than a third of a platform still showing) don't catch you. The faded look is gone.
+
+### Changed
+
+- The ◀ / ▶ buttons are more see-through (no blur) and the ⚡ button is slightly transparent, so platforms behind them stay visible.
+- Removed the controls-height measuring (`World.setBottomInset`, `UIManager.syncControlsInset`) that 3.1.1 added. It is no longer needed.
+
 ## [3.1.1] - 2026-09-28
 
 ### Removed
@@ -176,7 +187,8 @@ The first production release: everything from the unreleased 1.3 line (new anima
 - Keyboard and touch controls, responsive layout, PWA manifest.
 - Tooling: Vite, ESLint, Prettier, Vitest, GitHub Actions CI and GitHub Pages deploy.
 
-[Unreleased]: https://github.com/levsage/DiliJump/compare/v3.1.1...HEAD
+[Unreleased]: https://github.com/levsage/DiliJump/compare/v3.1.2...HEAD
+[3.1.2]: https://github.com/levsage/DiliJump/compare/v3.1.1...v3.1.2
 [3.1.1]: https://github.com/levsage/DiliJump/compare/v3.1.0...v3.1.1
 [3.1.0]: https://github.com/levsage/DiliJump/compare/v3.0.1...v3.1.0
 [3.0.1]: https://github.com/levsage/DiliJump/compare/v3.0.0...v3.0.1

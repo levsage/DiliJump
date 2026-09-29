@@ -55,14 +55,13 @@ Your level is shown next to your name on the leaderboard for everyone to see.
 | `SPRING_VELOCITY`  | −1650 px/s | Apex ≈ 633 px                                            |
 | `PLATFORM.MAX_GAP` | 200 px     | Always below the jump apex, so every level can be beaten |
 
-Only what you can see counts. The on-screen controls cover the bottom of the
-view, so the visible playfield ends at the top of the ◀ / ▶ buttons. The UI
-measures that height from the real layout (`CAMERA.BOTTOM_INSET`, about 120
-units by default, more with an iPhone home bar) and passes it to the world.
-Platforms, springs and monsters whose top is below that line (minus
-`CAMERA.LANDING_MARGIN`, 10 units) can't be landed on, stomped or hit, and are
-drawn faded so you can tell. Once you fall behind the controls you keep
-falling. Each run starts on a platform just above the controls.
+Only what you can see counts. Everything on screen can be landed on, right
+down to the bottom edge, including platforms seen through the see-through
+◀ / ⚡ / ▶ buttons. A platform, spring or monster stops counting once it has
+scrolled off the bottom: its top must be at least `CAMERA.LANDING_MARGIN`
+(6 units, a third of a platform) above the bottom edge. Each run starts on a
+platform `CAMERA.START_HEIGHT` (170 units) above the bottom, clear of the
+controls.
 
 ## Platforms
 

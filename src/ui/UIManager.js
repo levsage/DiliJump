@@ -1,4 +1,4 @@
-import { GAME_STATES, VIEW } from '../config/constants.js';
+import { GAME_STATES } from '../config/constants.js';
 import { EVENTS } from '../core/EventBus.js';
 import { $, $$ } from './dom.js';
 import { HUD } from './HUD.js';
@@ -67,7 +67,6 @@ export class UIManager {
       this.onState(this.game.state);
     });
     events.on(EVENTS.FATAL, () => this.showFatal());
-    window.addEventListener('resize', () => this.syncControlsInset());
     events.on(EVENTS.PROFILE_SYNCED, () => this.onProfileSynced());
     events.on(EVENTS.SKIN_CHANGED, (id) => this.hud.setAvatar(skinAvatarUrl(id)));
 
@@ -180,22 +179,6 @@ export class UIManager {
     if (this.game.state === GAME_STATES.MENU) this.menu.refresh();
   }
 
-  /**
-   * Tell the world how much of the bottom of the view the on-screen controls
-   * cover (in world units), so platforms hidden behind them don't count.
-   * Uses offsets (not getBoundingClientRect) so a pressed button's scale
-   * transform doesn't change the result.
-   */
-  syncControlsInset() {
-    if (this.controls.hidden) return;
-    const app = this.controls.offsetParent;
-    const btn = this.controls.querySelector('.ctrl--move');
-    if (!app || !btn || !app.clientHeight) return;
-    const top = this.controls.offsetTop + btn.offsetTop;
-    const inset = ((app.clientHeight - top) / app.clientHeight) * VIEW.HEIGHT;
-    this.game.world.setBottomInset(inset);
-  }
-
   onState(state) {
     const s = this.screens;
     if (!s.leaderboard.hidden) this.board.close();
@@ -204,7 +187,6 @@ export class UIManager {
     const playing = state === GAME_STATES.PLAYING || state === GAME_STATES.PAUSED;
     this.hud.show(playing);
     this.controls.hidden = state !== GAME_STATES.PLAYING;
-    this.syncControlsInset();
     // offer the update only outside a run, never mid-jump
     this.updateToast.hidden = !this.updateReady || playing;
     $$('.screen--overlay').forEach((el) => el.classList.remove('is-open'));

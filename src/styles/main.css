@@ -393,8 +393,8 @@ input {
 .ctrl--move {
   width: 21cqw;
   height: 21cqw;
-  background: rgba(11, 30, 74, 0.45);
-  backdrop-filter: blur(4px);
+  /* see-through (no blur), so platforms behind the buttons stay visible */
+  background: rgba(11, 30, 74, 0.28);
 }
 
 .ctrl--move svg {
@@ -417,6 +417,7 @@ input {
   height: 16cqw;
   margin-bottom: 2.5cqw;
   background: radial-gradient(circle at 35% 30%, #aef9ff, #1fb6d6);
+  opacity: 0.8;
   font-size: 7cqw;
 }
 
